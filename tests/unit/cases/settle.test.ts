@@ -4,37 +4,30 @@ import { buildSettle, canSettle, parseSettleForm } from '@/lib/cases/settle'
 const NOW = new Date('2026-08-23T12:00:00.000Z')
 
 describe('buildSettle, already have it', () => {
-  it('accepts the item and records how it actually arrived', () => {
-    const { patch } = buildSettle(
-      { action: 'already_have', receivedVia: 'email' },
-      'adviser-1',
-      NOW,
-    )
+  it('accepts the item', () => {
+    const { patch } = buildSettle({ action: 'already_have' }, 'adviser-1', NOW)
 
     expect(patch.status).toBe('accepted')
-    expect(patch.received_via).toBe('email')
     expect(patch.received_at).toBe(NOW.toISOString())
     expect(patch.accepted_at).toBe(NOW.toISOString())
     expect(patch.accepted_by).toBe('adviser-1')
   })
 
-  it('handles post and in person the same way', () => {
-    expect(buildSettle({ action: 'already_have', receivedVia: 'post' }, 'a', NOW).patch.received_via).toBe('post')
-    expect(
-      buildSettle({ action: 'already_have', receivedVia: 'in_person' }, 'a', NOW).patch.received_via,
-    ).toBe('in_person')
+  it('does not claim it came through the portal', () => {
+    const { patch } = buildSettle({ action: 'already_have' }, 'a', NOW)
+    expect(patch.received_via).toBeNull()
   })
 
   it('stops the chase clock', () => {
-    const { patch } = buildSettle({ action: 'already_have', receivedVia: 'email' }, 'a', NOW)
+    const { patch } = buildSettle({ action: 'already_have' }, 'a', NOW)
     expect(patch.next_chase_at).toBeNull()
   })
 
-  it('writes an event saying it came in outside the portal', () => {
-    const { event } = buildSettle({ action: 'already_have', receivedVia: 'post' }, 'a', NOW)
+  it('writes an event saying it came in outside the portal, with no files', () => {
+    const { event } = buildSettle({ action: 'already_have' }, 'a', NOW)
 
     expect(event.type).toBe('requirement_accepted')
-    expect(event.detail).toMatchObject({ received_via: 'post', files_attached: false })
+    expect(event.detail).toMatchObject({ outside_portal: true, files_attached: false })
   })
 })
 
@@ -76,34 +69,21 @@ describe('canSettle', () => {
 
 describe('parseSettleForm', () => {
   it('reads an already-have submission', () => {
-    const result = parseSettleForm({ action: 'already_have', received_via: 'post' })
-    expect(result).toEqual({ ok: true, input: { action: 'already_have', receivedVia: 'post' } })
-  })
-
-  it('defaults to email, which is how documents nearly always arrive', () => {
-    const result = parseSettleForm({ action: 'already_have' })
-    expect(result.ok && result.input).toEqual({ action: 'already_have', receivedVia: 'email' })
+    expect(parseSettleForm({ action: 'already_have' })).toEqual({
+      ok: true,
+      input: { action: 'already_have' },
+    })
   })
 
   it('reads a not-applicable submission', () => {
-    const result = parseSettleForm({ action: 'not_applicable' })
-    expect(result).toEqual({ ok: true, input: { action: 'not_applicable' } })
+    expect(parseSettleForm({ action: 'not_applicable' })).toEqual({
+      ok: true,
+      input: { action: 'not_applicable' },
+    })
   })
 
   it('refuses anything else', () => {
     expect(parseSettleForm({ action: 'delete' }).ok).toBe(false)
     expect(parseSettleForm({}).ok).toBe(false)
-  })
-
-  it('refuses a way of arriving it does not recognise', () => {
-    expect(parseSettleForm({ action: 'already_have', received_via: 'carrier pigeon' }).ok).toBe(
-      false,
-    )
-  })
-
-  it('never accepts the portal as a route, because the portal does that itself', () => {
-    // Marking something as having come in "by portal" by hand would fake an
-    // upload that does not exist.
-    expect(parseSettleForm({ action: 'already_have', received_via: 'portal' }).ok).toBe(false)
   })
 })

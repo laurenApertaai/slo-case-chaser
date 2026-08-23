@@ -68,19 +68,6 @@ export function SettleItem({
           >
             We already have it
           </button>
-          <select
-            name="received_via"
-            defaultValue="email"
-            aria-label="How it reached you"
-            className="rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-900"
-          >
-            <option value="email">by email</option>
-            <option value="post">by post</option>
-            <option value="in_person">in person</option>
-          </select>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
           <button
             type="submit"
             name="action"
@@ -99,8 +86,7 @@ export function SettleItem({
         </div>
 
         <p className="text-xs text-slate-500">
-          Nothing is deleted. The first records that it arrived outside the portal, the second that
-          it was not needed. Both stay on the case record.
+          Nothing is deleted. Both stay on the case record.
         </p>
       </fieldset>
     </form>

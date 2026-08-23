@@ -3,11 +3,16 @@
  *
  * Two reasons, and they must not behave the same:
  *
- *   already_have    It arrived by email, post or in person. The item is
- *                   accepted and the trail records how it actually came in.
- *                   This is the normal path, not the exception: the adviser has
- *                   to put the file on the lender portal and the CRM anyway, so
- *                   making them also upload it here would be duplicate work.
+ *   already_have    It arrived some other way and the adviser has it. The item
+ *                   is accepted. This is the normal path, not the exception:
+ *                   the adviser has to put the file on the lender portal and
+ *                   the CRM anyway, so making them also upload it here would be
+ *                   duplicate work.
+ *
+ *                   Which route it came by is not recorded. It was asked for and
+ *                   it was answered; whether that was email or post changes
+ *                   nothing anybody will ever act on, and asking is friction on
+ *                   a job done forty times a week.
  *
  *   not_applicable  It turned out not to be needed on this case. The item is
  *                   waived. Nothing is recorded as having arrived, because the
@@ -20,18 +25,12 @@
  */
 import type { RequirementStatus } from '@/lib/cases/status'
 
-/** How a document reached the adviser when it did not come through the portal. */
-export type OffPortalRoute = 'email' | 'post' | 'in_person'
-
-const ROUTES: OffPortalRoute[] = ['email', 'post', 'in_person']
-
-export type SettleInput =
-  | { action: 'already_have'; receivedVia: OffPortalRoute }
-  | { action: 'not_applicable' }
+export type SettleInput = { action: 'already_have' } | { action: 'not_applicable' }
 
 export type SettlePatch = {
   status: 'accepted' | 'waived'
-  received_via: OffPortalRoute | null
+  /** null on both paths: nothing came through the portal either way */
+  received_via: null
   received_at: string | null
   accepted_at: string | null
   accepted_by: string | null
@@ -64,7 +63,7 @@ export function buildSettle(
     return {
       patch: {
         status: 'accepted',
-        received_via: input.receivedVia,
+        received_via: null,
         received_at: stamp,
         accepted_at: stamp,
         accepted_by: adviserId,
@@ -74,9 +73,9 @@ export function buildSettle(
         type: 'requirement_accepted',
         actor: adviserId,
         detail: {
-          received_via: input.receivedVia,
-          // A requirement can reach accepted with no files at all. The tool
-          // tracks state, not files.
+          // It reached the adviser outside the portal. A requirement can reach
+          // accepted with no files at all; the tool tracks state, not files.
+          outside_portal: true,
           files_attached: false,
         },
       },
@@ -104,19 +103,7 @@ export function parseSettleForm(form: Record<string, string | undefined>): Settl
   const action = (form.action ?? '').trim()
 
   if (action === 'not_applicable') return { ok: true, input: { action: 'not_applicable' } }
+  if (action === 'already_have') return { ok: true, input: { action: 'already_have' } }
 
-  if (action !== 'already_have') {
-    return { ok: false, errors: { action: 'That is not something that can be done to an item.' } }
-  }
-
-  // Defaults to email, which is how documents nearly always turn up.
-  const route = (form.received_via ?? 'email').trim() as OffPortalRoute
-
-  // "portal" is deliberately not on the list. Setting it by hand would fake an
-  // upload that never happened.
-  if (!ROUTES.includes(route)) {
-    return { ok: false, errors: { received_via: 'Say how it reached you.' } }
-  }
-
-  return { ok: true, input: { action: 'already_have', receivedVia: route } }
+  return { ok: false, errors: { action: 'That is not something that can be done to an item.' } }
 }
