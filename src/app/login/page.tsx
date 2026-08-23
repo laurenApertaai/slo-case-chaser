@@ -12,12 +12,14 @@ async function signIn(formData: FormData) {
   const next = safeNextPath(String(formData.get('next') ?? ''))
 
   const supabase = await authClient()
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
+    console.error(`[login] failed for "${email}": ${error.message}`)
     redirect(`/login?error=1&next=${encodeURIComponent(next)}`)
   }
 
+  console.log(`[login] success for "${email}", session ${data.session ? 'created' : 'MISSING'}`)
   redirect(next)
 }
 
