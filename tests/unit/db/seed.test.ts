@@ -3,6 +3,7 @@ import {
   HOUSEHOLD_BILL_FIELDS,
   DEFAULT_TEMPLATE,
   DEFAULT_REJECTION_REASONS,
+  ADVISERS,
 } from '@/lib/db/seed'
 
 /**
@@ -34,6 +35,20 @@ function clientFacingStrings(): { where: string; text: string }[] {
 
   return out
 }
+
+describe('advisers', () => {
+  it('has all five advisers', () => {
+    expect(ADVISERS).toHaveLength(5)
+  })
+
+  it('gives every adviser a unique company email address', () => {
+    const emails = ADVISERS.map((a) => a.email)
+    expect(new Set(emails).size).toBe(emails.length)
+    for (const email of emails) {
+      expect(email, `${email} should be a company address`).toMatch(/@sloptions\.co\.uk$/)
+    }
+  })
+})
 
 describe('household bill fields', () => {
   it('has all nineteen questions from the retired Typeform', () => {

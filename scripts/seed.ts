@@ -7,7 +7,12 @@
  * Run with: npm run seed
  */
 import { createClient } from '@supabase/supabase-js'
-import { DEFAULT_TEMPLATE, DEFAULT_REJECTION_REASONS } from '../src/lib/db/seed'
+import {
+  DEFAULT_TEMPLATE,
+  DEFAULT_REJECTION_REASONS,
+  ADVISERS,
+  FIRM_NAME,
+} from '../src/lib/db/seed'
 
 const TEMPLATE_NAME = 'Standard second charge pack'
 
@@ -79,7 +84,34 @@ async function seedRejectionReasons() {
   console.log(`reasons   loaded   ${DEFAULT_REJECTION_REASONS.length} rejection reasons`)
 }
 
+async function seedAdvisers() {
+  const db = client()
+
+  for (const adviser of ADVISERS) {
+    const { data: existing, error: findError } = await db
+      .from('advisers')
+      .select('id, name')
+      .eq('email', adviser.email)
+      .maybeSingle()
+
+    if (findError) throw findError
+
+    if (existing) {
+      // Do not overwrite a name that has already been corrected by hand.
+      continue
+    }
+
+    const { error } = await db
+      .from('advisers')
+      .insert({ name: adviser.firstName, email: adviser.email, firm: FIRM_NAME })
+    if (error) throw error
+  }
+
+  console.log(`advisers  loaded   ${ADVISERS.length} advisers at ${FIRM_NAME}`)
+}
+
 async function main() {
+  await seedAdvisers()
   await seedTemplate()
   await seedRejectionReasons()
   console.log('\nSeed complete.')

@@ -7,6 +7,27 @@
  */
 
 // ---------------------------------------------------------------------------
+// Advisers
+//
+// Five advisers at Secured Lending Options. Every adviser can see every case;
+// the dashboard defaults to "my cases" but the filter can be cleared, which is
+// what makes holiday and sickness cover work.
+//
+// Surnames are still to be confirmed. They appear in client-facing emails, so
+// they must be filled in before phase 6 goes live.
+// ---------------------------------------------------------------------------
+
+export const ADVISERS = [
+  { firstName: 'Lauren', email: 'lauren@sloptions.co.uk' },
+  { firstName: 'Craig', email: 'craig@sloptions.co.uk' },
+  { firstName: 'David', email: 'david@sloptions.co.uk' },
+  { firstName: 'Kevin', email: 'kevin@sloptions.co.uk' },
+  { firstName: 'Gary', email: 'gary@sloptions.co.uk' },
+] as const
+
+export const FIRM_NAME = 'Secured Lending Options'
+
+// ---------------------------------------------------------------------------
 // Household bills - a flat list, rebuilt natively from the retired Typeform.
 // All nineteen are mandatory. Zero is a valid answer; blank is not.
 // ---------------------------------------------------------------------------
