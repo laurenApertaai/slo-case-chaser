@@ -117,3 +117,32 @@ export async function nextWorkingDayAt(
   const [y, m, d] = isoDate(next).split('-').map(Number)
   return new Date(Date.UTC(y, m - 1, d, hour, 0, 0))
 }
+
+/**
+ * How many working days have passed between two moments.
+ *
+ * The start day itself does not count, so the day the pack goes out is day 0
+ * and the chase cadence in the spec — day 2, 4, 6, 8 — lines up directly.
+ *
+ * A pack issued on a Friday afternoon has had no working days by Sunday. That
+ * matters: counting calendar days would flag a case red over a bank holiday
+ * weekend when the client has not actually had a chance to do anything.
+ */
+export async function workingDaysBetween(
+  from: Date,
+  to: Date,
+  holidays: HolidayProvider = govUkHolidays,
+): Promise<number> {
+  if (to.getTime() <= from.getTime()) return 0
+
+  const cursor = new Date(from.getTime())
+  const end = isoDate(to)
+  let days = 0
+
+  while (isoDate(cursor) < end) {
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+    if (await isWorkingDay(cursor, holidays)) days += 1
+  }
+
+  return days
+}

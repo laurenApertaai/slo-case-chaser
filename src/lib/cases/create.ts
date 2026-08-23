@@ -69,8 +69,12 @@ export type NewRequirementRow = {
   sort_order: number
   rejection_count: 0
   is_paused: false
-  /** which template item this came from, kept for later rebuilds and reporting */
-  template_key: string
+  /**
+   * Which template item this came from, kept so later steps can find a
+   * particular requirement again. Null for a one-off item an adviser added to a
+   * live case, which came from no template at all.
+   */
+  template_key: string | null
 }
 
 export type NewEventRow = {

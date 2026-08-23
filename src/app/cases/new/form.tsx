@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import Link from 'next/link'
 import { createCaseAction, type NewCaseState } from './actions'
+import { PortalLink } from '../portal-link'
 
 const FIELD =
   'mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none'
@@ -56,17 +57,11 @@ export function NewCaseForm() {
         </p>
 
         <div className="mt-6">
-          <p className={LABEL}>The client portal link</p>
-          <input
-            readOnly
-            value={state.portalUrl}
-            onFocus={(event) => event.currentTarget.select()}
-            className={`${FIELD} font-mono text-xs`}
+          <p className={`${LABEL} mb-1`}>The client portal link</p>
+          <PortalLink
+            url={state.portalUrl}
+            note="This is the secret link. It expires in 90 days. Sending it is part of issuing the pack, which is built in a later phase. It is also kept on the case page, so it is not lost if you navigate away."
           />
-          <p className="mt-1 text-xs text-slate-500">
-            This is the secret link. It expires in 90 days. Sending it is part of issuing the pack,
-            which is built in a later phase.
-          </p>
         </div>
 
         <div className="mt-6 flex gap-3">

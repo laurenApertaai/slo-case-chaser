@@ -1,36 +1,43 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { currentAdviser } from '@/lib/auth/supabase'
-import { serverClient } from '@/lib/db/client'
+import { listCases } from '@/lib/cases/load'
+import { StatusBadge } from './status-badge'
 
 export const metadata = { title: 'Cases' }
 
-type CaseRow = {
-  id: string
-  case_ref: string
-  lender: string | null
-  is_joint: boolean
-  applicant_1_name: string
-  created_at: string
+// The case list is a live picture of what needs doing. Caching it would show an
+// adviser a document as outstanding after the client has already sent it.
+export const dynamic = 'force-dynamic'
+
+function money(amount: number | null): string {
+  if (amount === null) return ''
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    maximumFractionDigits: 0,
+  }).format(amount)
 }
 
-export default async function CasesPage() {
+export default async function CasesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ all?: string }>
+}) {
   const adviser = await currentAdviser()
 
   // Signed in with an address that is not on the advisers list.
   if (!adviser) redirect('/login?error=1')
 
-  // Every adviser can see every case. Holiday and sickness cover happen
-  // constantly, and a case nobody can see is a case that stalls.
-  //
-  // Read with the secret key, server side. Row level security is on with no
-  // policies, so the browser key returns an empty list rather than an error.
-  const { data, error } = await serverClient()
-    .from('cases')
-    .select('id, case_ref, lender, is_joint, applicant_1_name, created_at')
-    .order('created_at', { ascending: false })
+  const params = await searchParams
+  const showAll = params.all === '1'
 
-  const cases = (data ?? []) as CaseRow[]
+  const everything = await listCases()
+
+  // Defaults to your own cases, but the filter clears. Holiday and sickness
+  // cover happen constantly, and a case nobody can see is a case that stalls.
+  const cases = showAll ? everything : everything.filter((c) => c.adviser_id === adviser.id)
+  const othersCount = everything.length - cases.length
 
   return (
     <main className="min-h-screen bg-slate-50 p-8">
@@ -49,49 +56,68 @@ export default async function CasesPage() {
         </Link>
       </header>
 
-      <section className="mx-auto mt-8 max-w-5xl rounded-xl border border-slate-200 bg-white">
-        {error && (
-          <p role="alert" className="p-8 text-sm text-red-700">
-            The case list could not be loaded: {error.message}
-          </p>
-        )}
+      <div className="mx-auto mt-6 flex max-w-5xl items-center gap-4 text-sm">
+        <Link
+          href="/cases"
+          className={showAll ? 'text-slate-500 hover:text-slate-700' : 'font-medium text-slate-900'}
+        >
+          My cases
+        </Link>
+        <Link
+          href="/cases?all=1"
+          className={showAll ? 'font-medium text-slate-900' : 'text-slate-500 hover:text-slate-700'}
+        >
+          Everyone&rsquo;s cases
+          {!showAll && othersCount > 0 && (
+            <span className="ml-1 text-slate-400">({othersCount} more)</span>
+          )}
+        </Link>
+      </div>
 
-        {!error && cases.length === 0 && (
+      <section className="mx-auto mt-4 max-w-5xl rounded-xl border border-slate-200 bg-white">
+        {cases.length === 0 ? (
           <p className="p-8 text-slate-600">
-            No cases yet. Create one from the standard pack to get started.
+            {showAll
+              ? 'No cases yet. Create one from the standard pack to get started.'
+              : 'None of your own. Try everyone’s cases, or create one.'}
           </p>
-        )}
-
-        {!error && cases.length > 0 && (
+        ) : (
           <ul className="divide-y divide-slate-200">
             {cases.map((row) => (
-              <li key={row.id} className="flex items-baseline justify-between gap-4 p-4">
-                <div>
-                  <p className="font-medium text-slate-900">
-                    {row.applicant_1_name}
-                    {row.is_joint && (
-                      <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-normal text-slate-600">
-                        joint
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    {row.case_ref}
-                    {row.lender && ` · ${row.lender}`}
-                  </p>
-                </div>
-                <p className="text-xs text-slate-400">
-                  {new Date(row.created_at).toLocaleDateString('en-GB')}
-                </p>
+              <li key={row.id}>
+                <Link
+                  href={`/cases/${row.id}`}
+                  className="flex items-center justify-between gap-4 p-4 hover:bg-slate-50"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-slate-900">
+                      {row.applicant_1_name}
+                      {row.is_joint && (
+                        <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-normal text-slate-600">
+                          joint
+                        </span>
+                      )}
+                    </p>
+                    <p className="truncate text-sm text-slate-500">
+                      {row.case_ref}
+                      {row.lender && ` · ${row.lender}`}
+                      {row.loan_amount !== null && ` · ${money(row.loan_amount)}`}
+                      {showAll && row.adviser_name && ` · ${row.adviser_name}`}
+                    </p>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-4">
+                    <p className="hidden text-sm text-slate-500 sm:block">
+                      {row.progress.accepted} of {row.progress.total} in
+                    </p>
+                    <StatusBadge colour={row.progress.colour} label={row.progress.label} />
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>
         )}
       </section>
-
-      <p className="mx-auto mt-4 max-w-5xl text-xs text-slate-400">
-        Red, amber and green status and the single case view are the next thing being built.
-      </p>
     </main>
   )
 }
