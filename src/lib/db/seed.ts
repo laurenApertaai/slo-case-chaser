@@ -68,6 +68,14 @@ export type TemplateItem = {
   perApplicant: boolean
   /** true means this item only appears on joint applications */
   jointOnly: boolean
+  /**
+   * Who the item belongs to, where that is not obvious.
+   *
+   * Per-applicant items work it out for themselves and everything else belongs
+   * to the case as a whole, so this is only needed for the odd item that
+   * belongs to one named applicant without being duplicated for the other.
+   */
+  applicantSlot?: 'applicant_1' | 'applicant_2' | 'joint'
   isMandatory: boolean
   sortOrder: number
   /** number of files or pages expected, where it is known up front */
@@ -136,6 +144,7 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
       'We need the email address and mobile number for the second applicant so that we can send them their part of the paperwork.',
     perApplicant: false,
     jointOnly: true,
+    applicantSlot: 'applicant_2',
     isMandatory: true,
     sortOrder: 5,
     fields: [

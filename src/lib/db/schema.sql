@@ -62,6 +62,9 @@ create table requirements (
   case_id           uuid not null references cases(id) on delete cascade,
   applicant         applicant_slot not null,
   type              requirement_type not null,
+  -- which template item this came from; null for a one-off item an adviser
+  -- added to a live case. See migration 002 for why the label cannot do this.
+  template_key      text,
   label             text not null,
   description       text,
   status            requirement_status not null default 'outstanding',
@@ -80,6 +83,7 @@ create table requirements (
 );
 
 create index on requirements (case_id, status);
+create index on requirements (case_id, template_key);
 create index on requirements (next_chase_at) where status in ('outstanding', 'rejected');
 
 create table answers (
