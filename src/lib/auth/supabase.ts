@@ -8,6 +8,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { NextRequest, NextResponse } from 'next/server'
+import { serverClient } from '@/lib/db/client'
 
 function credentials() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -54,8 +55,14 @@ export function middlewareClient(request: NextRequest, response: NextResponse) {
 /**
  * The logged-in adviser's own record, or null.
  *
- * Auth identity and the adviser record are joined on email address, so a
- * login only works for an address that appears in the advisers table.
+ * Two different clients on purpose. The publishable-key client establishes
+ * *who* is asking, because only it carries the session. The lookup itself then
+ * uses the secret-key client, because row level security is switched on for
+ * every table with no policies, so a browser-key read returns nothing at all.
+ *
+ * Reading the row with the session client instead is the bug this comment
+ * exists to prevent: the login succeeds, the page loads, and the adviser is
+ * silently bounced back to the login screen with no useful error.
  */
 export async function currentAdviser() {
   const supabase = await authClient()
@@ -65,7 +72,7 @@ export async function currentAdviser() {
 
   if (!user?.email) return null
 
-  const { data } = await supabase
+  const { data } = await serverClient()
     .from('advisers')
     .select('id, name, email, firm')
     .eq('email', user.email)
