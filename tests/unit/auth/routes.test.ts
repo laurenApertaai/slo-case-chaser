@@ -13,6 +13,15 @@ describe('route guarding', () => {
     expect(isPublicRoute('/portal/some-long-token')).toBe(true)
   })
 
+  it('leaves the portal API open too, or the portal page cannot do anything', () => {
+    // The page and the routes it calls have to be open together. Guarding the
+    // API by session would bounce the client to an adviser login screen the
+    // moment they tried to answer a question or send a file.
+    expect(requiresAuth('/api/portal/some-long-token')).toBe(false)
+    expect(requiresAuth('/api/portal/some-long-token/upload')).toBe(false)
+    expect(requiresAuth('/api/portal/some-long-token/answer')).toBe(false)
+  })
+
   it('leaves the login page open', () => {
     expect(requiresAuth('/login')).toBe(false)
   })
@@ -29,6 +38,7 @@ describe('route guarding', () => {
   it('does not treat a lookalike prefix as public', () => {
     // "/portalx" must not inherit "/portal" permissions.
     expect(requiresAuth('/portalx')).toBe(true)
+    expect(requiresAuth('/api/portalx')).toBe(true)
     expect(requiresAuth('/loginsomething')).toBe(true)
   })
 })

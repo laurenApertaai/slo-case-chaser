@@ -5,8 +5,16 @@
  * browser or a server. The middleware is a thin wrapper around these.
  */
 
-/** Routes a client reaches by token, with no login. Never guarded. */
-const PUBLIC_PREFIXES = ['/portal', '/login', '/auth']
+/**
+ * Routes a client reaches by token, with no login. Never guarded by a session.
+ *
+ * `/api/portal` has to be here alongside `/portal`. The page and the routes it
+ * calls are one surface: guarding the API by session would bounce a client to
+ * an adviser login screen the moment they tried to answer a question or send a
+ * file. These routes are not unprotected - they validate the token themselves,
+ * in `src/lib/portal/resolve.ts`, which is the only credential a client has.
+ */
+const PUBLIC_PREFIXES = ['/portal', '/api/portal', '/login', '/auth']
 
 /** Machine endpoints. Guarded by a shared secret header, not by a session. */
 const MACHINE_PREFIXES = ['/api/cron']
