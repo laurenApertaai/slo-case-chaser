@@ -98,7 +98,7 @@ export type PortalStore = {
  * rejected hears a judgement; a client told to send it again hears a task.
  */
 const CLIENT_WORDING: Record<RequirementStatus, { state: PortalItemState; label: string }> = {
-  outstanding: { state: 'outstanding', label: 'Still needed' },
+  outstanding: { state: 'outstanding', label: 'Still required' },
   received: { state: 'checking', label: 'Received, we are checking this' },
   accepted: { state: 'done', label: 'Accepted' },
   rejected: { state: 'sent_back', label: 'Please send this again' },

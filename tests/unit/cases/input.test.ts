@@ -5,10 +5,12 @@ const complete = {
   case_ref: 'SLO-2026-0412',
   lender: 'Together',
   loan_amount: '25000',
+  home_improvement_amount: '18000',
   applicant_1_name: 'David Walker',
   applicant_1_email: 'David@Example.com',
   applicant_1_mobile: '07700 900123',
   is_joint: 'on',
+  applicant_2_name: 'Sarah Walker',
   employment_type: '',
 }
 
@@ -71,10 +73,12 @@ describe('parseCaseForm', () => {
       caseRef: 'SLO-2026-0412',
       lender: 'Together',
       loanAmount: 25000,
+      homeImprovementAmount: 18000,
       isJoint: true,
       applicant1Name: 'David Walker',
       applicant1Email: 'david@example.com',
       applicant1Mobile: '+447700900123',
+      applicant2Name: 'Sarah Walker',
       employmentType: null,
     })
   })
@@ -82,6 +86,46 @@ describe('parseCaseForm', () => {
   it('treats an unticked joint box as a sole application', () => {
     const result = parse({ is_joint: '' })
     expect(result.ok && result.input.isJoint).toBe(false)
+  })
+
+  it('asks for the second applicant name on a joint case', () => {
+    const result = parse({ applicant_2_name: '' })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.applicant_2_name).toBeTruthy()
+  })
+
+  it('does not ask for a second applicant on a sole case', () => {
+    const result = parse({ is_joint: '', applicant_2_name: '' })
+    expect(result.ok).toBe(true)
+  })
+
+  it('throws away a second applicant name left behind by unticking the box', () => {
+    const result = parse({ is_joint: '', applicant_2_name: 'Sarah Walker' })
+    expect(result.ok && result.input.applicant2Name).toBe(null)
+  })
+
+  it('keeps the home improvements figure apart from the loan', () => {
+    const result = parse({ loan_amount: '£25,000', home_improvement_amount: '£18,000' })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.input.loanAmount).toBe(25000)
+    expect(result.input.homeImprovementAmount).toBe(18000)
+  })
+
+  it('allows the home improvements figure to be left blank', () => {
+    const result = parse({ home_improvement_amount: '' })
+    expect(result.ok && result.input.homeImprovementAmount).toBe(null)
+  })
+
+  it('reports a nonsense home improvements figure', () => {
+    const result = parse({ home_improvement_amount: 'most of it' })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.home_improvement_amount).toBeTruthy()
   })
 
   it('allows the lender and the amount to be filled in later', () => {

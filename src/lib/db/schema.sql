@@ -31,6 +31,8 @@ create table cases (
   case_ref            text not null,
   lender              text,
   loan_amount         numeric(12,2),
+  -- the part of the loan that is for home improvements; see migration 003
+  home_improvement_amount numeric(12,2),
   status              case_status not null default 'active',
   is_joint            boolean not null default false,
   employment_type     employment_type,

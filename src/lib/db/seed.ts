@@ -92,7 +92,7 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
     type: 'upload',
     label: 'Your signed SLO documents',
     description:
-      'Please download the documents, print them, sign them and send them back. There are four pages. On a joint application both of you need to sign. A clear photo of each page is fine, you do not need to post the originals to us.',
+      'Please download the document, print the 4 highlighted pages, sign/date them and send them back. If this loan application is in joint names, you both need to sign/date. We only require the 4 signed pages to be returned, and a clear photo of each of the pages is fine.',
     perApplicant: false,
     jointOnly: false,
     isMandatory: true,
@@ -125,14 +125,14 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
   {
     key: 'dependants',
     type: 'question',
-    label: 'Dependants',
-    description: 'Do you have any dependants? If you do, please tell us their ages.',
+    label: 'Dependents',
+    description: 'Do you have any dependents? If so, please let us know their ages.',
     perApplicant: false,
     jointOnly: false,
     isMandatory: true,
     sortOrder: 4,
     fields: [
-      { key: 'has_dependants', label: 'Do you have any dependants?' },
+      { key: 'has_dependants', label: 'Do you have any dependents?' },
       { key: 'ages', label: 'Their ages' },
     ],
   },
@@ -141,14 +141,15 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
     type: 'question',
     label: 'Contact details for the second applicant',
     description:
-      'We need the email address and mobile number for the second applicant so that we can send them their part of the paperwork.',
+      'We require the email address and mobile number for {{applicant_2_name}} for the application.',
     perApplicant: false,
     jointOnly: true,
     applicantSlot: 'applicant_2',
     isMandatory: true,
     sortOrder: 5,
     fields: [
-      { key: 'partner_name', label: 'Full name' },
+      // The name is captured when the case is created, so only these two are
+      // still being asked for.
       { key: 'partner_email', label: 'Email address' },
       { key: 'partner_mobile', label: 'Mobile number' },
     ],
@@ -158,7 +159,7 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
     type: 'question',
     label: 'Your employment details',
     description:
-      'If you are employed we need your job title, the name of the company you work for, and the date you joined. If you are self employed we need to know whether you are a sole trader or a limited company, the company name if it is limited, and how many years you have been self employed.',
+      'If you are employed, we require your job title, the name of the company you work for, and the date you joined. If you are self employed, we need to know whether you are a sole trader or a limited company, the company name if it is limited, and how many years you have been self employed.',
     perApplicant: true,
     jointOnly: false,
     isMandatory: true,
@@ -175,9 +176,9 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
   {
     key: 'home_improvements',
     type: 'question',
-    label: 'What the money is for',
+    label: 'Loan Purpose',
     description:
-      'In terms of the {{loan_amount}}, what home improvements is this for? We need a rough breakdown because it is required for the application. For example: 10,000 pounds new bathroom, 10,000 pounds new windows, 5,000 pounds garden renovations, 5,000 pounds general decoration, 3,000 pounds internal doors.',
+      'In terms of the {{home_improvement_amount}} for home improvements, what home improvements are you carrying out? We require a rough breakdown for the application eg £10k new bathroom, £10k new windows, £5k garden renovations, £5k general décor upgrade, £3k internal doors etc',
     perApplicant: false,
     jointOnly: false,
     isMandatory: true,
@@ -187,9 +188,9 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
   {
     key: 'bank_details',
     type: 'question',
-    label: 'Where we should send the money',
+    label: 'Bank Details',
     description:
-      'The bank details you would like the cash to be sent to. These are stored securely and are never sent by email or text.',
+      'The bank details you would like the cash to be sent to. Name on account, account number and sort code.',
     perApplicant: false,
     jointOnly: false,
     isMandatory: true,
@@ -205,7 +206,7 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
     type: 'question_group',
     label: 'Your monthly household bills',
     description:
-      'Please tell us what you pay each month for the following. If something does not apply to you, please enter zero.',
+      'Please let us know how much you pay each month for the following household bills. If any of the items do not apply to you, please enter zero.',
     perApplicant: false,
     jointOnly: false,
     isMandatory: true,

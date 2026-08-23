@@ -147,7 +147,7 @@ describe('what the client is told about each item', () => {
     const item = await itemWith('outstanding')
 
     expect(item.state).toBe('outstanding')
-    expect(item.stateLabel).toBe('Still needed')
+    expect(item.stateLabel).toBe('Still required')
   })
 
   it('says it is being checked, never that it is under review', async () => {

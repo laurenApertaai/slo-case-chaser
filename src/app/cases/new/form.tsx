@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import Link from 'next/link'
 import { createCaseAction, type NewCaseState } from './actions'
 import { PortalLink } from '../portal-link'
@@ -41,6 +41,7 @@ function Field({
 }
 
 export function NewCaseForm() {
+  const [isJoint, setIsJoint] = useState(false)
   const [state, formAction, pending] = useActionState<NewCaseState, FormData>(createCaseAction, {
     status: 'idle',
   })
@@ -105,15 +106,26 @@ export function NewCaseForm() {
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field
-            name="loan_amount"
-            label="Loan amount"
-            hint="Optional. Appears in the question about what the money is for."
-            errors={errors}
-          >
+          <Field name="loan_amount" label="Loan amount" hint="Optional" errors={errors}>
             <input id="loan_amount" name="loan_amount" inputMode="decimal" className={FIELD} />
           </Field>
 
+          <Field
+            name="home_improvement_amount"
+            label="For home improvements"
+            hint="Optional. Leave blank if the whole loan is for the works."
+            errors={errors}
+          >
+            <input
+              id="home_improvement_amount"
+              name="home_improvement_amount"
+              inputMode="decimal"
+              className={FIELD}
+            />
+          </Field>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
           <Field
             name="employment_type"
             label="How the client is paid"
@@ -164,21 +176,42 @@ export function NewCaseForm() {
           </Field>
         </div>
 
-        <label className="flex items-start gap-3 rounded-md bg-slate-50 p-4">
-          <input
-            type="checkbox"
-            name="is_joint"
-            className="mt-0.5 h-4 w-4 rounded border-slate-300"
-          />
-          <span className="text-sm text-slate-700">
-            Joint application
-            <span className="mt-0.5 block text-xs text-slate-500">
-              The second applicant&rsquo;s items are added straight away, so the client sees
-              everything needed for both from the start. Their email and mobile are one of the
-              items, not something you type here.
+        <div className="rounded-md bg-slate-50 p-4">
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              name="is_joint"
+              checked={isJoint}
+              onChange={(event) => setIsJoint(event.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-slate-300"
+            />
+            <span className="text-sm text-slate-700">
+              Joint application
+              <span className="mt-0.5 block text-xs text-slate-500">
+                The second applicant&rsquo;s items are added straight away, so the client sees
+                everything needed for both from the start.
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+
+          {isJoint && (
+            <div className="mt-4 border-t border-slate-200 pt-4">
+              <Field
+                name="applicant_2_name"
+                label="Second applicant name"
+                hint="Used to label their items, so the client can tell whose is whose. Their email and mobile are one of the items on the list, not something you type here."
+                errors={errors}
+              >
+                <input
+                  id="applicant_2_name"
+                  name="applicant_2_name"
+                  required
+                  className={FIELD}
+                />
+              </Field>
+            </div>
+          )}
+        </div>
 
         <div className="flex gap-3 pt-1">
           <button

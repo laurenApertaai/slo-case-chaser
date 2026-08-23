@@ -6,6 +6,8 @@ import { loadCase, type CaseRequirement } from '@/lib/cases/load'
 import { StatusBadge } from '../status-badge'
 import { PortalLink } from '../portal-link'
 import { AddItem } from './add-item'
+import { SettleItem } from './settle-item'
+import { canSettle } from '@/lib/cases/settle'
 
 export const metadata = { title: 'Case' }
 
@@ -161,7 +163,13 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
                     {whose(item.applicant)} · {item.type.replace('_', ' ')}
                     {item.expected_count !== null && ` · ${item.expected_count} files expected`}
                     {item.rejection_count > 0 && ` · rejected ${item.rejection_count}×`}
+                    {item.received_via && item.received_via !== 'portal' &&
+                      ` · came in by ${item.received_via.replace('_', ' ')}`}
                   </p>
+
+                  {canSettle(item.status) && (
+                    <SettleItem caseId={record.id} requirementId={item.id} label={item.label} />
+                  )}
                 </div>
                 <p className={`shrink-0 text-sm ${REQUIREMENT_STYLES[item.status]}`}>
                   {REQUIREMENT_WORDS[item.status]}

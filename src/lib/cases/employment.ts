@@ -58,7 +58,7 @@ export function requirementsForEmployment(type: EmploymentType | null): IncomeRe
 
   return {
     label: `Your ${count} most recent ${period} payslips`,
-    description: `Please upload your ${count} most recent ${period} payslips. They must be the most recent ones you have received, because the lender will not accept older payslips.`,
+    description: `Please upload your ${count} most recent ${period} payslips.`,
     expectedCount: count,
   }
 }

@@ -94,9 +94,19 @@ describe('default template', () => {
     expect(contact?.jointOnly).toBe(true)
   })
 
-  it('carries the loan amount token on the home improvements question', () => {
+  it('carries the home improvements amount token on the loan purpose question', () => {
     const improvements = DEFAULT_TEMPLATE.find((i) => i.key === 'home_improvements')
-    expect(improvements?.description).toContain('{{loan_amount}}')
+    expect(improvements?.description).toContain('{{home_improvement_amount}}')
+  })
+
+  it('carries the second applicant name token on their contact details question', () => {
+    const contact = DEFAULT_TEMPLATE.find((i) => i.key === 'applicant_2_contact')
+    expect(contact?.description).toContain('{{applicant_2_name}}')
+  })
+
+  it('no longer asks the client for a name we already hold', () => {
+    const contact = DEFAULT_TEMPLATE.find((i) => i.key === 'applicant_2_contact')
+    expect(contact?.fields?.map((f) => f.key)).toEqual(['partner_email', 'partner_mobile'])
   })
 
   it('attaches all nineteen bill fields to the household bills group', () => {

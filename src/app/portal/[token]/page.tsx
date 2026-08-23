@@ -64,9 +64,7 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
           <p className="mt-2 text-slate-600">
             {view.allDone
               ? 'Thank you. We have everything we asked for and there is nothing else to send.'
-              : `We need ${view.outstandingCount} ${
-                  view.outstandingCount === 1 ? 'thing' : 'things'
-                } from you to move your application forward.`}
+              : 'We require the following documents/information in order to fully submit your application.'}
           </p>
           {view.isJoint && !view.allDone && (
             <p className="mt-2 text-sm text-slate-500">

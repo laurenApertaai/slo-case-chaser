@@ -35,6 +35,7 @@ export type CaseRequirement = StatusRequirement & {
   expected_count: number | null
   sort_order: number
   template_key: string | null
+  received_via: 'portal' | 'email' | 'post' | 'in_person' | null
 }
 
 export type CaseDetail = CaseSummary & {
@@ -54,7 +55,7 @@ const CASE_FIELDS =
 const DETAIL_FIELDS = `${CASE_FIELDS}, applicant_1_email, applicant_1_mobile, applicant_2_name, applicant_2_email, applicant_2_mobile, portal_token, token_expires_at`
 
 const REQUIREMENT_FIELDS =
-  'id, applicant, type, label, description, status, is_mandatory, expected_count, sort_order, rejection_count, received_at, template_key'
+  'id, applicant, type, label, description, status, is_mandatory, expected_count, sort_order, rejection_count, received_at, received_via, template_key'
 
 /**
  * Working days since the pack went out, or null while it has not been issued.

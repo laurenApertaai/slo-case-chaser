@@ -32,10 +32,17 @@ export type CreateCaseInput = {
   caseRef: string
   lender: string | null
   loanAmount: number | null
+  /** the part of the loan that is for home improvements, where it differs */
+  homeImprovementAmount: number | null
   isJoint: boolean
   applicant1Name: string
   applicant1Email: string
   applicant1Mobile: string
+  /**
+   * The second applicant's name, which the adviser knows at pack-issue time.
+   * Their email and mobile are still one of the client's outstanding items.
+   */
+  applicant2Name: string | null
   employmentType: EmploymentType | null
 }
 
@@ -44,6 +51,7 @@ export type NewCaseRow = {
   case_ref: string
   lender: string | null
   loan_amount: number | null
+  home_improvement_amount: number | null
   status: 'active'
   is_joint: boolean
   employment_type: EmploymentType | null
@@ -141,10 +149,22 @@ export function formatLoanAmount(amount: number | null): string {
 }
 
 function fillTokens(text: string, input: CreateCaseInput): string {
+  // Where no separate improvements figure is given, the whole loan is for the
+  // works, which is the common case. Falls back again to plain words so the
+  // sentence still reads if neither is known.
+  const improvements = input.homeImprovementAmount ?? input.loanAmount
+
   return text
     .replaceAll('{{loan_amount}}', formatLoanAmount(input.loanAmount))
+    .replaceAll('{{home_improvement_amount}}', formatLoanAmount(improvements))
+    .replaceAll('{{applicant_2_name}}', secondApplicant(input))
     .replaceAll('{{case_ref}}', input.caseRef)
     .replaceAll('{{lender}}', input.lender ?? 'the lender')
+}
+
+/** The second applicant by name where we have it, by role where we do not. */
+function secondApplicant(input: CreateCaseInput): string {
+  return input.applicant2Name?.trim() || 'the second applicant'
 }
 
 function firstName(fullName: string): string {
@@ -162,6 +182,9 @@ function firstName(fullName: string): string {
  * alone rather than ending up as "... for the second applicant - second
  * applicant".
  *
+ * The second applicant is named where the adviser has given their name, and
+ * falls back to their role where they have not.
+ *
  * A plain hyphen is used rather than a dash because these labels go out in text
  * messages, and a dash pushes the whole message into a character set that
  * halves how much fits in a segment.
@@ -174,7 +197,9 @@ function labelFor(
 ): string {
   if (!duplicated || !input.isJoint || applicant === 'joint') return base
   if (applicant === 'applicant_1') return `${base} - ${firstName(input.applicant1Name)}`
-  return `${base} - second applicant`
+  return input.applicant2Name?.trim()
+    ? `${base} - ${firstName(input.applicant2Name)}`
+    : `${base} - second applicant`
 }
 
 // ---------------------------------------------------------------------------
@@ -245,6 +270,7 @@ export function buildCaseRow(input: CreateCaseInput, now: Date = new Date()): Ne
     case_ref: input.caseRef.trim(),
     lender: input.lender?.trim() || null,
     loan_amount: input.loanAmount,
+    home_improvement_amount: input.homeImprovementAmount,
     status: 'active',
     is_joint: input.isJoint,
     employment_type: input.employmentType,
@@ -252,10 +278,13 @@ export function buildCaseRow(input: CreateCaseInput, now: Date = new Date()): Ne
     applicant_1_email: input.applicant1Email.trim().toLowerCase(),
     applicant_1_mobile: input.applicant1Mobile.trim(),
 
-    // The second applicant's details are one of their outstanding items, not
-    // something the adviser types in. Until the client supplies them, chasers
-    // go to applicant 1 alone and carry the full list for both.
-    applicant_2_name: null,
+    // The adviser knows the second applicant's name when the pack goes out, so
+    // it is captured here and used to name their items on the shared list.
+    applicant_2_name: input.isJoint ? input.applicant2Name?.trim() || null : null,
+
+    // Their email and mobile are not. Those are one of the client's outstanding
+    // items, and until they are supplied chasers go to applicant 1 alone and
+    // carry the full list for both.
     applicant_2_email: null,
     applicant_2_mobile: null,
 

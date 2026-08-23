@@ -98,6 +98,18 @@ export function parseCaseForm(
   const amount = parseAmount(read('loan_amount'))
   if (amount === 'invalid') errors.loan_amount = 'Enter the loan amount in figures, for example 25000.'
 
+  const improvements = parseAmount(read('home_improvement_amount'))
+  if (improvements === 'invalid') {
+    errors.home_improvement_amount =
+      'Enter the home improvements amount in figures, for example 20000.'
+  }
+
+  const isJoint = read('is_joint') !== ''
+  const applicant2Name = read('applicant_2_name')
+  if (isJoint && !applicant2Name) {
+    errors.applicant_2_name = 'Enter the second applicant name.'
+  }
+
   if (Object.keys(errors).length > 0) return { ok: false, errors }
 
   const employment = read('employment_type') as EmploymentType
@@ -110,10 +122,14 @@ export function parseCaseForm(
       caseRef,
       lender: lender || null,
       loanAmount: amount as number | null,
-      isJoint: read('is_joint') !== '',
+      homeImprovementAmount: improvements as number | null,
+      isJoint,
       applicant1Name: name,
       applicant1Email: email,
       applicant1Mobile: mobile as string,
+      // Only meaningful on a joint case. A name left over from ticking the box
+      // and unticking it again must not be stored.
+      applicant2Name: isJoint ? applicant2Name : null,
       employmentType: EMPLOYMENT_TYPES.includes(employment) ? employment : null,
     },
   }

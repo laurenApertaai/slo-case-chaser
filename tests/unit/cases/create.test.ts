@@ -6,6 +6,7 @@ import {
   generatePortalToken,
   tokenExpiry,
   type CaseStore,
+  type CreateCaseInput,
   type NewCaseRow,
   type NewEventRow,
   type NewRequirementRow,
@@ -14,19 +15,25 @@ import { DEFAULT_TEMPLATE } from '@/lib/db/seed'
 
 const CONTRACTION = /\b\w+['’](s|t|re|ll|ve|d|m)\b/i
 
-const soleInput = {
+const soleInput: CreateCaseInput = {
   adviserId: 'adviser-1',
   caseRef: 'SLO-2026-0412',
   lender: 'Together',
   loanAmount: 25000,
+  homeImprovementAmount: null,
   isJoint: false,
   applicant1Name: 'David Walker',
   applicant1Email: 'david@example.com',
   applicant1Mobile: '07700900123',
+  applicant2Name: null,
   employmentType: null,
 }
 
-const jointInput = { ...soleInput, isJoint: true }
+const jointInput: CreateCaseInput = {
+  ...soleInput,
+  isJoint: true,
+  applicant2Name: 'Sarah Walker',
+}
 
 /** Records everything written, so a test can assert on it without a database. */
 function recordingStore(items = DEFAULT_TEMPLATE) {
@@ -103,8 +110,28 @@ describe('buildRequirements', () => {
 
     expect(ids.map((r) => r.label)).toEqual([
       'Photo identification - David',
+      'Photo identification - Sarah',
+    ])
+  })
+
+  it('falls back to the role when the second applicant has no name yet', () => {
+    const rows = buildRequirements(DEFAULT_TEMPLATE, { ...jointInput, applicant2Name: null })
+    const ids = rows.filter((r) => r.template_key === 'identification')
+
+    expect(ids.map((r) => r.label)).toEqual([
+      'Photo identification - David',
       'Photo identification - second applicant',
     ])
+  })
+
+  it('puts the second applicant name into the wording that asks for their details', () => {
+    const rows = buildRequirements(DEFAULT_TEMPLATE, jointInput)
+    const contact = rows.find((r) => r.template_key === 'applicant_2_contact')
+
+    expect(contact?.description).toBe(
+      'We require the email address and mobile number for Sarah Walker for the application.',
+    )
+    expect(contact?.description).not.toContain('{{')
   })
 
   it('leaves an item that already names its owner alone', () => {
@@ -124,19 +151,37 @@ describe('buildRequirements', () => {
     expect(id?.label).toBe('Photo identification')
   })
 
-  it('fills the loan amount token in the wording the client reads', () => {
-    const rows = buildRequirements(DEFAULT_TEMPLATE, soleInput)
+  it('quotes the home improvements figure, not the whole loan', () => {
+    const rows = buildRequirements(DEFAULT_TEMPLATE, {
+      ...soleInput,
+      loanAmount: 25000,
+      homeImprovementAmount: 18000,
+    })
     const improvements = rows.find((r) => r.template_key === 'home_improvements')
 
-    expect(improvements?.description).toContain('In terms of the £25,000,')
+    expect(improvements?.description).toContain('In terms of the £18,000 for home improvements,')
+    expect(improvements?.description).not.toContain('£25,000')
     expect(improvements?.description).not.toContain('{{')
   })
 
-  it('reads sensibly when the loan amount is not known yet', () => {
-    const rows = buildRequirements(DEFAULT_TEMPLATE, { ...soleInput, loanAmount: null })
+  it('uses the whole loan when no separate improvements figure is given', () => {
+    const rows = buildRequirements(DEFAULT_TEMPLATE, soleInput)
     const improvements = rows.find((r) => r.template_key === 'home_improvements')
 
-    expect(improvements?.description).toContain('In terms of the loan amount,')
+    // The common case: the whole loan is for the works.
+    expect(improvements?.description).toContain('In terms of the £25,000 for home improvements,')
+    expect(improvements?.description).not.toContain('{{')
+  })
+
+  it('reads sensibly when no amount is known at all', () => {
+    const rows = buildRequirements(DEFAULT_TEMPLATE, {
+      ...soleInput,
+      loanAmount: null,
+      homeImprovementAmount: null,
+    })
+    const improvements = rows.find((r) => r.template_key === 'home_improvements')
+
+    expect(improvements?.description).toContain('In terms of the loan amount for home improvements,')
     expect(improvements?.description).not.toContain('{{')
   })
 
@@ -280,6 +325,31 @@ describe('createCase', () => {
     expect(written.cases[0].is_joint).toBe(true)
     expect(written.cases[0].applicant_2_email).toBeNull()
     expect(written.cases[0].applicant_2_mobile).toBeNull()
+  })
+
+  it('keeps the second applicant name the adviser typed in', async () => {
+    const { store, written } = recordingStore()
+
+    await createCase(jointInput, store)
+
+    expect(written.cases[0].applicant_2_name).toBe('Sarah Walker')
+  })
+
+  it('never stores a second applicant on a sole case', async () => {
+    const { store, written } = recordingStore()
+
+    await createCase({ ...soleInput, applicant2Name: 'Left over from a tickbox' }, store)
+
+    expect(written.cases[0].applicant_2_name).toBeNull()
+  })
+
+  it('records the home improvements figure separately from the loan', async () => {
+    const { store, written } = recordingStore()
+
+    await createCase({ ...soleInput, loanAmount: 25000, homeImprovementAmount: 18000 }, store)
+
+    expect(written.cases[0].loan_amount).toBe(25000)
+    expect(written.cases[0].home_improvement_amount).toBe(18000)
   })
 
   it('does not send the pack out by itself', async () => {
