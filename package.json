@@ -12,6 +12,7 @@
     "seed": "tsx --env-file=.env.local scripts/seed.ts"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
     "dotenv": "^17.4.2",
     "next": "16.3.2",
