@@ -13,16 +13,17 @@
 // the dashboard defaults to "my cases" but the filter can be cleared, which is
 // what makes holiday and sickness cover work.
 //
-// Surnames are still to be confirmed. They appear in client-facing emails, so
-// they must be filled in before phase 6 goes live.
+// These names appear at the foot of client-facing emails, so this file is the
+// single source of truth for them. Correct them here rather than in the
+// database, because the seed script overwrites the database from this list.
 // ---------------------------------------------------------------------------
 
 export const ADVISERS = [
-  { firstName: 'Lauren', email: 'lauren@sloptions.co.uk' },
-  { firstName: 'Craig', email: 'craig@sloptions.co.uk' },
-  { firstName: 'David', email: 'david@sloptions.co.uk' },
-  { firstName: 'Kevin', email: 'kevin@sloptions.co.uk' },
-  { firstName: 'Gary', email: 'gary@sloptions.co.uk' },
+  { name: 'Lauren McCallum', email: 'lauren@sloptions.co.uk' },
+  { name: 'Craig Gallacher', email: 'craig@sloptions.co.uk' },
+  { name: 'David Orr', email: 'david@sloptions.co.uk' },
+  { name: 'Kevin Prentice', email: 'kevin@sloptions.co.uk' },
+  { name: 'Gary Thomson', email: 'gary@sloptions.co.uk' },
 ] as const
 
 export const FIRM_NAME = 'Secured Lending Options'

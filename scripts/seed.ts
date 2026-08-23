@@ -97,13 +97,17 @@ async function seedAdvisers() {
     if (findError) throw findError
 
     if (existing) {
-      // Do not overwrite a name that has already been corrected by hand.
+      const { error } = await db
+        .from('advisers')
+        .update({ name: adviser.name, firm: FIRM_NAME })
+        .eq('id', existing.id)
+      if (error) throw error
       continue
     }
 
     const { error } = await db
       .from('advisers')
-      .insert({ name: adviser.firstName, email: adviser.email, firm: FIRM_NAME })
+      .insert({ name: adviser.name, email: adviser.email, firm: FIRM_NAME })
     if (error) throw error
   }
 
