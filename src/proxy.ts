@@ -6,8 +6,11 @@ import { requiresAuth, loginRedirect } from '@/lib/auth/routes'
  * Keeps the adviser session fresh and locks anything that is not explicitly
  * public. The rules themselves live in `lib/auth/routes.ts` so they can be
  * tested without a browser.
+ *
+ * Named `proxy` rather than `middleware` because Next.js 16 renamed the
+ * convention.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const response = NextResponse.next({ request })
   const { pathname } = request.nextUrl
 
