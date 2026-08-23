@@ -151,12 +151,24 @@ function firstName(fullName: string): string {
  * Whose item this is, spelled out on the shared list.
  *
  * Both applicants see one list, so two items called "Photo identification" with
- * nothing to tell them apart is a guaranteed support call. A plain hyphen is
- * used rather than a dash because these labels go out in text messages, and a
- * dash pushes the whole message into a character set that doubles its cost.
+ * nothing to tell them apart is a guaranteed support call.
+ *
+ * Only items that actually appear twice get named. An item that already says
+ * who it belongs to, such as the second applicant's contact details, is left
+ * alone rather than ending up as "... for the second applicant - second
+ * applicant".
+ *
+ * A plain hyphen is used rather than a dash because these labels go out in text
+ * messages, and a dash pushes the whole message into a character set that
+ * halves how much fits in a segment.
  */
-function labelFor(base: string, applicant: ApplicantSlot, input: CreateCaseInput): string {
-  if (!input.isJoint || applicant === 'joint') return base
+function labelFor(
+  base: string,
+  applicant: ApplicantSlot,
+  input: CreateCaseInput,
+  duplicated: boolean,
+): string {
+  if (!duplicated || !input.isJoint || applicant === 'joint') return base
   if (applicant === 'applicant_1') return `${base} - ${firstName(input.applicant1Name)}`
   return `${base} - second applicant`
 }
@@ -207,7 +219,7 @@ export function buildRequirements(
       rows.push({
         applicant,
         type: item.type,
-        label: labelFor(base, applicant, input),
+        label: labelFor(base, applicant, input, item.perApplicant),
         description: fillTokens(description, input),
         status: 'outstanding',
         is_mandatory: item.isMandatory,

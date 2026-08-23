@@ -107,6 +107,16 @@ describe('buildRequirements', () => {
     ])
   })
 
+  it('leaves an item that already names its owner alone', () => {
+    const rows = buildRequirements(DEFAULT_TEMPLATE, jointInput)
+    const contact = rows.find((r) => r.template_key === 'applicant_2_contact')
+
+    // It appears once, so there is nothing to tell it apart from. Naming it
+    // again gives "... for the second applicant - second applicant".
+    expect(contact?.label).toBe('Contact details for the second applicant')
+    expect(contact?.applicant).toBe('applicant_2')
+  })
+
   it('leaves labels unadorned on a sole application', () => {
     const rows = buildRequirements(DEFAULT_TEMPLATE, soleInput)
     const id = rows.find((r) => r.template_key === 'identification')
