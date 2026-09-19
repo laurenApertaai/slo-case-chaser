@@ -34,6 +34,9 @@ function caseRow(overrides: Partial<PortalCaseRow> = {}): PortalCaseRow {
         expected_count: 4,
         sort_order: 10,
         upload_count: 1,
+        page_count: 1,
+        template_key: 'slo_documents',
+        answers: {},
       },
     ],
     ...overrides,
@@ -125,6 +128,54 @@ describe('resolvePortal', () => {
     expect(JSON.stringify(result.view)).not.toContain(TOKEN)
   })
 
+  it('never hands bank details back to the page, even when they have been given', async () => {
+    const row = caseRow()
+    row.requirements = [
+      {
+        ...row.requirements[0],
+        id: 'bank',
+        type: 'question',
+        template_key: 'bank_details',
+        answers: { account_number: '12345678', sort_code: '123456' },
+      },
+    ]
+
+    const result = await resolve(row)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.view.items[0].values).toEqual({})
+    expect(JSON.stringify(result.view)).not.toContain('12345678')
+  })
+
+  it('hands other answers back, so a client can correct them', async () => {
+    const row = caseRow()
+    row.requirements = [
+      {
+        ...row.requirements[0],
+        type: 'question',
+        template_key: 'dependants',
+        answers: { has_dependants: 'yes', ages: '4' },
+      },
+    ]
+
+    const result = await resolve(row)
+    expect(result.ok && result.view.items[0].values).toEqual({ has_dependants: 'yes', ages: '4' })
+  })
+
+  it('counts pages for the signed pack, and files for everything else', async () => {
+    const row = caseRow()
+    row.requirements = [
+      { ...row.requirements[0], id: 'pack', upload_count: 1, page_count: 4 },
+      { ...row.requirements[0], id: 'pay', template_key: 'income_evidence', upload_count: 1, page_count: 3 },
+    ]
+
+    const result = await resolve(row)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.view.items.find((i) => i.id === 'pack')!.uploadedCount).toBe(4)
+    expect(result.view.items.find((i) => i.id === 'pay')!.uploadedCount).toBe(1)
+  })
+
   it('greets the client by their first name only', async () => {
     const result = await resolve(caseRow())
 
@@ -180,7 +231,11 @@ describe('what the client is told about each item', () => {
   })
 
   it('counts files towards the expected number', async () => {
-    const item = await itemWith('outstanding', { expected_count: 12, upload_count: 8 })
+    const item = await itemWith('outstanding', {
+      template_key: 'income_evidence',
+      expected_count: 12,
+      upload_count: 8,
+    })
 
     expect(item.expectedCount).toBe(12)
     expect(item.uploadedCount).toBe(8)

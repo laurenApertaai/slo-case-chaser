@@ -33,5 +33,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  // The client portal's API is left out entirely. It is not session-guarded -
+  // it validates the client's token itself - and running it through here would
+  // buffer uploaded files in memory and cut off anything over the size limit,
+  // silently corrupting a large photo.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/portal/).*)'],
 }

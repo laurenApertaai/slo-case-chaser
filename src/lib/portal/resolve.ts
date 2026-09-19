@@ -35,6 +35,11 @@ export type PortalRequirementRow = {
   expected_count: number | null
   sort_order: number
   upload_count: number
+  /** pages across every file, which is what the signed pack is counted in */
+  page_count: number
+  template_key: string | null
+  /** what the client has already filled in, by box */
+  answers: Record<string, string>
 }
 
 export type PortalCaseRow = {
@@ -68,7 +73,12 @@ export type PortalItem = {
   stateLabel: string
   isMandatory: boolean
   expectedCount: number | null
+  /** files sent so far, or pages for the signed pack */
   uploadedCount: number
+  /** which pack item this is, so the page knows which boxes to show */
+  templateKey: string | null
+  /** answers already given, to fill the boxes back in; never bank details */
+  values: Record<string, string>
 }
 
 export type PortalView = {
@@ -104,6 +114,12 @@ const CLIENT_WORDING: Record<RequirementStatus, { state: PortalItemState; label:
   rejected: { state: 'sent_back', label: 'Please send this again' },
   waived: { state: 'not_needed', label: 'No longer needed' },
 }
+
+/** Counted in pages, because four pages arrive as one PDF as often as four photos. */
+const COUNTED_IN_PAGES = 'slo_documents'
+
+/** Answers that are never sent back to the page once given. */
+const NEVER_SHOWN_BACK = 'bank_details'
 
 /** Whether this item is still being asked of the client. */
 function isOutstanding(status: RequirementStatus): boolean {
@@ -146,7 +162,12 @@ export function buildPortalView(row: PortalCaseRow): PortalView {
         stateLabel: wording.label,
         isMandatory: requirement.is_mandatory,
         expectedCount: requirement.expected_count,
-        uploadedCount: requirement.upload_count,
+        uploadedCount:
+          requirement.template_key === COUNTED_IN_PAGES
+            ? requirement.page_count
+            : requirement.upload_count,
+        templateKey: requirement.template_key,
+        values: requirement.template_key === NEVER_SHOWN_BACK ? {} : requirement.answers,
       }
     })
 
@@ -165,11 +186,19 @@ export function buildPortalView(row: PortalCaseRow): PortalView {
   }
 }
 
-export async function resolvePortal(
+export type PortalOpening =
+  | { ok: true; row: PortalCaseRow }
+  | { ok: false; status: 404 | 410; reason: string }
+
+/**
+ * Checks a token and returns the case behind it. For server routes that need
+ * the case itself; anything sent to the page goes through `buildPortalView`.
+ */
+export async function openPortal(
   token: string,
   store: PortalStore = supabasePortalStore(),
   now: Date = new Date(),
-): Promise<PortalResolution> {
+): Promise<PortalOpening> {
   // Anything the wrong shape is not a token. Stop before touching the database.
   if (token.length !== TOKEN_LENGTH) {
     return { ok: false, status: 404, reason: 'That link is not valid.' }
@@ -198,7 +227,17 @@ export async function resolvePortal(
     }
   }
 
-  return { ok: true, view: buildPortalView(row) }
+  return { ok: true, row }
+}
+
+export async function resolvePortal(
+  token: string,
+  store: PortalStore = supabasePortalStore(),
+  now: Date = new Date(),
+): Promise<PortalResolution> {
+  const opened = await openPortal(token, store, now)
+  if (!opened.ok) return opened
+  return { ok: true, view: buildPortalView(opened.row) }
 }
 
 // ---------------------------------------------------------------------------
@@ -223,7 +262,9 @@ export function supabasePortalStore(): PortalStore {
 
       const { data: requirements, error: reqError } = await db
         .from('requirements')
-        .select('id, applicant, type, label, description, status, is_mandatory, expected_count, sort_order, uploads(count)')
+        .select(
+          'id, applicant, type, label, description, status, is_mandatory, expected_count, sort_order, template_key, uploads(page_count, deleted_at), answers(field_key, value)',
+        )
         .eq('case_id', data.id)
         .order('sort_order')
 
@@ -232,10 +273,19 @@ export function supabasePortalStore(): PortalStore {
       return {
         ...(data as Omit<PortalCaseRow, 'requirements'>),
         requirements: (requirements ?? []).map((r) => {
-          const { uploads, ...rest } = r as typeof r & { uploads: { count: number }[] }
+          const { uploads, answers, ...rest } = r as typeof r & {
+            uploads: { page_count: number | null; deleted_at: string | null }[]
+            answers: { field_key: string; value: string | null }[]
+          }
+          const live = (uploads ?? []).filter((u) => !u.deleted_at)
           return {
-            ...(rest as unknown as Omit<PortalRequirementRow, 'upload_count'>),
-            upload_count: uploads?.[0]?.count ?? 0,
+            ...(rest as unknown as Omit<
+              PortalRequirementRow,
+              'upload_count' | 'page_count' | 'answers'
+            >),
+            upload_count: live.length,
+            page_count: live.reduce((sum, u) => sum + (u.page_count ?? 1), 0),
+            answers: Object.fromEntries((answers ?? []).map((a) => [a.field_key, a.value ?? ''])),
           }
         }),
       }

@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
-import { resolvePortal, type PortalItem } from '@/lib/portal/resolve'
+import { buildPortalView, openPortal, type PortalItem } from '@/lib/portal/resolve'
+import { formFor } from '@/lib/portal/answers'
+import { listSloFiles } from '@/lib/files/storage'
 import { FIRM_NAME } from '@/lib/db/seed'
+import { UploadButton } from './upload-button'
+import { DetailsForm } from './details-form'
 
 /**
  * The client's page.
@@ -49,11 +53,15 @@ function Closed({ message }: { message: string }) {
 
 export default async function PortalPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
-  const result = await resolvePortal(token)
+  const opened = await openPortal(token)
 
-  if (!result.ok) return <Closed message={result.reason} />
+  if (!opened.ok) return <Closed message={opened.reason} />
 
-  const { view } = result
+  const view = buildPortalView(opened.row)
+  const sloFiles = await listSloFiles(opened.row.id)
+
+  // Something is only asked for while it is still needed, or has been sent back.
+  const open = (item: PortalItem) => item.state === 'outstanding' || item.state === 'sent_back'
 
   return (
     <main className="min-h-screen bg-slate-50 pb-16">
@@ -124,6 +132,33 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
                   This one is optional, but it does help.
                 </p>
               )}
+
+              {item.templateKey === 'slo_documents' && sloFiles.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {sloFiles.map((file) => (
+                    <a
+                      key={file.name}
+                      href={`/api/portal/${token}/slo/${encodeURIComponent(file.name)}`}
+                      className="rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                    >
+                      Download {sloFiles.length > 1 ? file.name : 'the document'}
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              {open(item) && item.type === 'upload' && (
+                <UploadButton token={token} requirementId={item.id} />
+              )}
+
+              {open(item) && item.type !== 'upload' && formFor(item.templateKey) && (
+                <DetailsForm
+                  token={token}
+                  requirementId={item.id}
+                  fields={formFor(item.templateKey)!}
+                  initial={item.values}
+                />
+              )}
             </li>
           ))}
         </ul>
@@ -133,10 +168,6 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
           will sort it out.
         </p>
 
-        <p className="mt-6 rounded-lg bg-slate-100 p-4 text-center text-sm text-slate-600">
-          Sending your documents from this page is being built at the moment. For now, please reply
-          to the email we sent you and we will take them that way.
-        </p>
       </div>
     </main>
   )

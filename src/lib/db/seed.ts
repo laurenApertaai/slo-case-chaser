@@ -190,15 +190,16 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
     type: 'question',
     label: 'Bank Details',
     description:
-      'The bank details you would like the cash to be sent to. Name on account, account number and sort code.',
+      'The bank details you would like the residual cash to be sent to. Name on account, account number and sort code.',
     perApplicant: false,
     jointOnly: false,
     isMandatory: true,
     sortOrder: 8,
     fields: [
-      { key: 'account_name', label: 'Name on the account' },
-      { key: 'sort_code', label: 'Sort code' },
+      { key: 'account_name', label: 'Name on Account' },
       { key: 'account_number', label: 'Account number' },
+      { key: 'sort_code', label: 'Sort Code' },
+      { key: 'bank_name', label: 'Bank name' },
     ],
   },
   {
@@ -206,7 +207,7 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
     type: 'question_group',
     label: 'Your monthly household bills',
     description:
-      'Please let us know how much you pay each month for the following household bills. If any of the items do not apply to you, please enter zero.',
+      'Please let us know how much you pay each month for the following household bills (will only take a few minutes). If any of the items do not apply to you, please enter zero.',
     perApplicant: false,
     jointOnly: false,
     isMandatory: true,

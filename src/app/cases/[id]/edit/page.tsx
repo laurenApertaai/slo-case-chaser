@@ -4,6 +4,8 @@ import { currentAdviser } from '@/lib/auth/supabase'
 import { serverClient } from '@/lib/db/client'
 import { CASE_ROW_FIELDS, caseRowToValues, type CaseRow } from '@/lib/cases/update'
 import { EditCaseForm } from './form'
+import { SloPanel } from './slo-panel'
+import { listSloFiles } from '@/lib/files/storage'
 
 export const metadata = { title: 'Edit case' }
 export const dynamic = 'force-dynamic'
@@ -24,6 +26,7 @@ export default async function EditCasePage({ params }: { params: Promise<{ id: s
   if (!data) notFound()
 
   const row = data as unknown as CaseRow
+  const sloFiles = await listSloFiles(id)
 
   return (
     <main className="min-h-screen bg-slate-50 p-8">
@@ -34,8 +37,9 @@ export default async function EditCasePage({ params }: { params: Promise<{ id: s
         <h1 className="mt-2 text-2xl font-semibold text-slate-900">Edit case {row.case_ref}</h1>
       </header>
 
-      <section className="mx-auto mt-8 max-w-3xl">
+      <section className="mx-auto mt-8 max-w-3xl space-y-6">
         <EditCaseForm caseId={id} initial={caseRowToValues(row)} />
+        <SloPanel caseId={id} files={sloFiles} />
       </section>
     </main>
   )

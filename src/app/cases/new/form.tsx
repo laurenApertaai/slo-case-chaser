@@ -22,6 +22,24 @@ export function NewCaseForm() {
           been sent yet.
         </p>
 
+        {state.sloAttached.length > 0 && (
+          <p className="mt-2 text-sm text-green-800">
+            SLO documents attached: {state.sloAttached.join(', ')}
+          </p>
+        )}
+        {state.sloAttached.length === 0 && state.sloProblems.length === 0 && (
+          <p className="mt-2 text-sm text-amber-800">
+            No SLO documents attached. Add them from Edit case details, so the client can download
+            them.
+          </p>
+        )}
+        {state.sloProblems.length > 0 && (
+          <p role="alert" className="mt-2 text-sm text-red-700">
+            Some SLO documents did not attach: {state.sloProblems.join('; ')}. Add them again from
+            Edit case details.
+          </p>
+        )}
+
         <div className="mt-6">
           <p className={`${LABEL} mb-1`}>The client portal link</p>
           <PortalLink
@@ -70,6 +88,20 @@ export function NewCaseForm() {
           errors={errors}
           showApplicant2Contact={false}
         />
+
+        <div>
+          <label htmlFor="slo_files" className={LABEL}>
+            Upload SLO documents
+          </label>
+          <input
+            id="slo_files"
+            name="slo_files"
+            type="file"
+            multiple
+            accept="application/pdf,image/*"
+            className="mt-1 block w-full text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-slate-800"
+          />
+        </div>
 
         <div className="flex gap-3 pt-1">
           <button

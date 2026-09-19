@@ -6,6 +6,7 @@ import { serverClient } from '@/lib/db/client'
 import { buildExtraRequirement, parseExtraForm } from '@/lib/cases/extra'
 import { buildSettle, parseSettleForm } from '@/lib/cases/settle'
 import { parseWordingForm } from '@/lib/cases/wording'
+import { decryptBankDetails, fromBytea } from '@/lib/crypto/bankDetails'
 import { highestSortOrder } from '@/lib/cases/load'
 
 export type ExtraItemState =
@@ -181,5 +182,45 @@ export async function rewordRequirementAction(
     const message = error instanceof Error ? error.message : String(error)
     console.error(`[cases] could not reword ${requirementId}: ${message}`)
     return { status: 'error', message: `That did not save: ${message}` }
+  }
+}
+
+export type RevealState =
+  | { status: 'idle' }
+  | { status: 'error'; message: string }
+  | {
+      status: 'shown'
+      details: { account_name: string; account_number: string; sort_code: string; bank_name: string }
+    }
+
+/**
+ * Opens a case's bank details for the adviser to read in full.
+ *
+ * Every look is written to the audit trail - who, and when - because these are
+ * the details most worth protecting. What they say is never written down.
+ */
+export async function revealBankDetailsAction(caseId: string): Promise<RevealState> {
+  const adviser = await currentAdviser()
+  if (!adviser) return { status: 'error', message: 'Your session has expired. Please sign in again.' }
+
+  try {
+    const db = serverClient()
+    const { data, error } = await db.from('cases').select('bank_details_enc').eq('id', caseId).single()
+    if (error) throw error
+    if (!data.bank_details_enc) return { status: 'error', message: 'No bank details have been given yet.' }
+
+    const details = decryptBankDetails(fromBytea(data.bank_details_enc))
+
+    await db.from('events').insert({
+      case_id: caseId,
+      type: 'bank_details_viewed',
+      actor: adviser.id,
+      detail: {},
+    })
+
+    return { status: 'shown', details }
+  } catch (error) {
+    console.error(`[cases] could not open bank details for ${caseId}:`, error instanceof Error ? error.message : error)
+    return { status: 'error', message: 'The bank details could not be opened.' }
   }
 }

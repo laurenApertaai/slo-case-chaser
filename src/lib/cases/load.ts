@@ -37,6 +37,18 @@ export type CaseRequirement = StatusRequirement & {
   sort_order: number
   template_key: string | null
   received_via: 'portal' | 'email' | 'post' | 'in_person' | null
+  /** files the client sent, as they arrived */
+  uploads: CaseUpload[]
+  /** what the client typed, by box; never bank details, which live on the case sealed */
+  answers: Record<string, string>
+}
+
+export type CaseUpload = {
+  id: string
+  original_filename: string
+  page_count: number | null
+  size_bytes: number
+  uploaded_at: string
 }
 
 export type CaseDetail = CaseSummary & {
@@ -47,16 +59,19 @@ export type CaseDetail = CaseSummary & {
   applicant_2_mobile: string | null
   portal_token: string
   token_expires_at: string
+  /** last four digits of the account, when bank details have been given */
+  bank_details_last4: string | null
   requirements: CaseRequirement[]
 }
 
 const CASE_FIELDS =
   'id, case_ref, lender, loan_amount, loan_purpose, is_joint, status, applicant_1_name, adviser_id, pack_issued_at, created_at'
 
-const DETAIL_FIELDS = `${CASE_FIELDS}, applicant_1_email, applicant_1_mobile, applicant_2_name, applicant_2_email, applicant_2_mobile, portal_token, token_expires_at`
+const DETAIL_FIELDS = `${CASE_FIELDS}, applicant_1_email, applicant_1_mobile, applicant_2_name, applicant_2_email, applicant_2_mobile, portal_token, token_expires_at, bank_details_last4`
 
 const REQUIREMENT_FIELDS =
-  'id, applicant, type, label, description, status, is_mandatory, expected_count, sort_order, rejection_count, received_at, received_via, template_key'
+  'id, applicant, type, label, description, status, is_mandatory, expected_count, sort_order, rejection_count, received_at, received_via, template_key, ' +
+  'uploads(id, original_filename, page_count, size_bytes, uploaded_at, deleted_at), answers(field_key, value)'
 
 /**
  * Working days since the pack went out, or null while it has not been issued.
@@ -129,7 +144,18 @@ export async function loadCase(id: string, now: Date = new Date()): Promise<Case
 
   if (reqError) throw reqError
 
-  const list = (requirements ?? []) as CaseRequirement[]
+  type Raw = Omit<CaseRequirement, 'uploads' | 'answers'> & {
+    uploads: (CaseUpload & { deleted_at: string | null })[] | null
+    answers: { field_key: string; value: string | null }[] | null
+  }
+
+  const list: CaseRequirement[] = ((requirements ?? []) as unknown as Raw[]).map((r) => ({
+    ...r,
+    uploads: (r.uploads ?? [])
+      .filter((u) => !u.deleted_at)
+      .sort((a, b) => a.uploaded_at.localeCompare(b.uploaded_at)),
+    answers: Object.fromEntries((r.answers ?? []).map((a) => [a.field_key, a.value ?? ''])),
+  }))
 
   return {
     ...(row as unknown as Omit<CaseDetail, 'progress' | 'requirements' | 'adviser_name'>),

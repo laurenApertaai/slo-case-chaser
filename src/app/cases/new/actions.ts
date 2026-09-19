@@ -4,6 +4,7 @@ import { headers } from 'next/headers'
 import { currentAdviser } from '@/lib/auth/supabase'
 import { createCase } from '@/lib/cases/create'
 import { parseCaseForm, type FieldErrors } from '@/lib/cases/input'
+import { putSloFiles } from '@/lib/files/storage'
 
 export type NewCaseState =
   | { status: 'idle' }
@@ -15,7 +16,16 @@ export type NewCaseState =
       values: Record<string, string>
       attempt: number
     }
-  | { status: 'created'; caseId: string; caseRef: string; portalUrl: string; itemCount: number }
+  | {
+      status: 'created'
+      caseId: string
+      caseRef: string
+      portalUrl: string
+      itemCount: number
+      /** the SLO documents attached, and anything that would not attach */
+      sloAttached: string[]
+      sloProblems: string[]
+    }
 
 async function absoluteUrl(path: string): Promise<string> {
   const head = await headers()
@@ -41,10 +51,15 @@ export async function createCaseAction(
     }
   }
 
+  // Text boxes only. Files cannot be put back into a form after a mistake, so
+  // they are not kept - the adviser picks them again.
   const fields = Object.fromEntries(
-    [...formData.entries()].map(([key, value]) => [key, String(value)]),
+    [...formData.entries()]
+      .filter(([, value]) => typeof value === 'string')
+      .map(([key, value]) => [key, String(value)]),
   )
   const keep = { values: fields, attempt: Date.now() }
+  const sloFiles = formData.getAll('slo_files').filter((f): f is File => f instanceof File)
 
   const parsed = parseCaseForm(fields, adviser.id)
   if (!parsed.ok) return { status: 'error', errors: parsed.errors, ...keep }
@@ -52,12 +67,23 @@ export async function createCaseAction(
   try {
     const created = await createCase(parsed.input)
 
+    // The case exists whatever happens to the documents. A problem attaching
+    // them is reported, and they can be added from the edit screen.
+    let slo: { attached: string[]; problems: string[] }
+    try {
+      slo = await putSloFiles(created.id, sloFiles)
+    } catch (error) {
+      slo = { attached: [], problems: [error instanceof Error ? error.message : String(error)] }
+    }
+
     return {
       status: 'created',
       caseId: created.id,
       caseRef: created.case_ref,
       portalUrl: await absoluteUrl(`/portal/${created.portal_token}`),
       itemCount: created.requirement_count,
+      sloAttached: slo.attached,
+      sloProblems: slo.problems,
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)

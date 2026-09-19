@@ -8,6 +8,8 @@ import { PortalLink } from '../portal-link'
 import { AddItem } from './add-item'
 import { SettleItem } from './settle-item'
 import { RewordItem } from './reword-item'
+import { Received } from './received'
+import { formFor } from '@/lib/portal/answers'
 import { canSettle } from '@/lib/cases/settle'
 
 export const metadata = { title: 'Case' }
@@ -214,6 +216,14 @@ export default async function CasePage({
                       ` · came in by ${item.received_via.replace('_', ' ')}`}
                   </p>
 
+                  <Received
+                    caseId={record.id}
+                    templateKey={item.template_key}
+                    uploads={item.uploads}
+                    answers={item.answers}
+                    fields={formFor(item.template_key)}
+                    bankLast4={record.bank_details_last4}
+                  />
                   <RewordItem
                     caseId={record.id}
                     requirementId={item.id}
