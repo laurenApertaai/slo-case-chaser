@@ -38,9 +38,16 @@ create table cases (
   employment_type     employment_type,
 
   applicant_1_name    text not null,
+  -- the same name in its parts, as lenders ask for it; see migration 004
+  applicant_1_first_name  text,
+  applicant_1_middle_name text,
+  applicant_1_surname     text,
   applicant_1_email   text not null,
   applicant_1_mobile  text not null,
   applicant_2_name    text,
+  applicant_2_first_name  text,
+  applicant_2_middle_name text,
+  applicant_2_surname     text,
   applicant_2_email   text,
   applicant_2_mobile  text,
 

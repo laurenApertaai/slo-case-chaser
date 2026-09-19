@@ -137,24 +137,6 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
     ],
   },
   {
-    key: 'applicant_2_contact',
-    type: 'question',
-    label: 'Contact details for the second applicant',
-    description:
-      'We require the email address and mobile number for {{applicant_2_name}} for the application.',
-    perApplicant: false,
-    jointOnly: true,
-    applicantSlot: 'applicant_2',
-    isMandatory: true,
-    sortOrder: 5,
-    fields: [
-      // The name is captured when the case is created, so only these two are
-      // still being asked for.
-      { key: 'partner_email', label: 'Email address' },
-      { key: 'partner_mobile', label: 'Mobile number' },
-    ],
-  },
-  {
     key: 'employment_details',
     type: 'question',
     label: 'Your employment details',

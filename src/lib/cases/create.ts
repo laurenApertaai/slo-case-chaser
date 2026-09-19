@@ -27,6 +27,14 @@ const TOKEN_DAYS = 90
 
 export type ApplicantSlot = 'applicant_1' | 'applicant_2' | 'joint'
 
+/**
+ * A name as lenders ask for it: first, middle and surname separately.
+ *
+ * The middle name matters. A lender application is made in the applicant's full
+ * legal name, and a missing middle name is a mismatch against their ID.
+ */
+export type NameParts = { first: string; middle: string | null; surname: string }
+
 export type CreateCaseInput = {
   adviserId: string
   caseRef: string
@@ -35,7 +43,10 @@ export type CreateCaseInput = {
   /** the part of the loan that is for home improvements, where it differs */
   homeImprovementAmount: number | null
   isJoint: boolean
+  /** the full name, middle name included, as it reads on the application */
   applicant1Name: string
+  /** the same name in its parts; absent only for callers that predate the split */
+  applicant1Parts?: NameParts | null
   applicant1Email: string
   applicant1Mobile: string
   /**
@@ -43,6 +54,13 @@ export type CreateCaseInput = {
    * Their email and mobile are still one of the client's outstanding items.
    */
   applicant2Name: string | null
+  applicant2Parts?: NameParts | null
+  /**
+   * The second applicant's email and mobile. The adviser enters both when the
+   * case is created, so the client is never asked for them.
+   */
+  applicant2Email: string | null
+  applicant2Mobile: string | null
   employmentType: EmploymentType | null
 }
 
@@ -56,9 +74,15 @@ export type NewCaseRow = {
   is_joint: boolean
   employment_type: EmploymentType | null
   applicant_1_name: string
+  applicant_1_first_name: string | null
+  applicant_1_middle_name: string | null
+  applicant_1_surname: string | null
   applicant_1_email: string
   applicant_1_mobile: string
   applicant_2_name: string | null
+  applicant_2_first_name: string | null
+  applicant_2_middle_name: string | null
+  applicant_2_surname: string | null
   applicant_2_email: string | null
   applicant_2_mobile: string | null
   portal_token: string
@@ -196,10 +220,13 @@ function labelFor(
   duplicated: boolean,
 ): string {
   if (!duplicated || !input.isJoint || applicant === 'joint') return base
-  if (applicant === 'applicant_1') return `${base} - ${firstName(input.applicant1Name)}`
-  return input.applicant2Name?.trim()
-    ? `${base} - ${firstName(input.applicant2Name)}`
-    : `${base} - second applicant`
+
+  if (applicant === 'applicant_1') {
+    return `${base} - ${input.applicant1Parts?.first || firstName(input.applicant1Name)}`
+  }
+
+  const second = input.applicant2Parts?.first || (input.applicant2Name?.trim() && firstName(input.applicant2Name))
+  return second ? `${base} - ${second}` : `${base} - second applicant`
 }
 
 // ---------------------------------------------------------------------------
@@ -209,8 +236,10 @@ function labelFor(
 /** Leaves room between template items so an ad-hoc item can be slotted in later. */
 const SORT_STEP = 10
 
-function slotsFor(item: TemplateItem, isJoint: boolean): ApplicantSlot[] {
+function slotsFor(item: TemplateItem, input: CreateCaseInput): ApplicantSlot[] {
+  const isJoint = input.isJoint
   if (item.jointOnly && !isJoint) return []
+
   if (item.perApplicant) return isJoint ? ['applicant_1', 'applicant_2'] : ['joint']
   return [item.applicantSlot ?? 'joint']
 }
@@ -234,7 +263,7 @@ export function buildRequirements(
   const rows: NewRequirementRow[] = []
 
   for (const item of [...template].sort((a, b) => a.sortOrder - b.sortOrder)) {
-    for (const applicant of slotsFor(item, input.isJoint)) {
+    for (const applicant of slotsFor(item, input)) {
       // Income evidence retitles itself once the client says how they are paid,
       // and carries the file count that lets the portal say "8 of 12 uploaded".
       const income = item.employmentDependent
@@ -275,18 +304,22 @@ export function buildCaseRow(input: CreateCaseInput, now: Date = new Date()): Ne
     is_joint: input.isJoint,
     employment_type: input.employmentType,
     applicant_1_name: input.applicant1Name.trim(),
+    applicant_1_first_name: input.applicant1Parts?.first ?? null,
+    applicant_1_middle_name: input.applicant1Parts?.middle ?? null,
+    applicant_1_surname: input.applicant1Parts?.surname ?? null,
     applicant_1_email: input.applicant1Email.trim().toLowerCase(),
     applicant_1_mobile: input.applicant1Mobile.trim(),
 
     // The adviser knows the second applicant's name when the pack goes out, so
     // it is captured here and used to name their items on the shared list.
     applicant_2_name: input.isJoint ? input.applicant2Name?.trim() || null : null,
+    applicant_2_first_name: input.isJoint ? input.applicant2Parts?.first ?? null : null,
+    applicant_2_middle_name: input.isJoint ? input.applicant2Parts?.middle ?? null : null,
+    applicant_2_surname: input.isJoint ? input.applicant2Parts?.surname ?? null : null,
 
-    // Their email and mobile are not. Those are one of the client's outstanding
-    // items, and until they are supplied chasers go to applicant 1 alone and
-    // carry the full list for both.
-    applicant_2_email: null,
-    applicant_2_mobile: null,
+    // Their email and mobile are entered by the adviser alongside the name.
+    applicant_2_email: input.isJoint ? input.applicant2Email?.trim().toLowerCase() || null : null,
+    applicant_2_mobile: input.isJoint ? input.applicant2Mobile?.trim() || null : null,
 
     portal_token: generatePortalToken(),
     token_expires_at: tokenExpiry(now).toISOString(),

@@ -26,6 +26,8 @@ const soleInput: CreateCaseInput = {
   applicant1Email: 'david@example.com',
   applicant1Mobile: '07700900123',
   applicant2Name: null,
+  applicant2Email: null,
+  applicant2Mobile: null,
   employmentType: null,
 }
 
@@ -33,6 +35,8 @@ const jointInput: CreateCaseInput = {
   ...soleInput,
   isJoint: true,
   applicant2Name: 'Sarah Walker',
+  applicant2Email: 'sarah@example.com',
+  applicant2Mobile: '+447700900456',
 }
 
 /** Records everything written, so a test can assert on it without a database. */
@@ -66,7 +70,7 @@ describe('buildRequirements', () => {
   it('creates one row per item on a sole application', () => {
     const rows = buildRequirements(DEFAULT_TEMPLATE, soleInput)
 
-    // Nine template items, one of which is joint only, none duplicated.
+    // Eight template items, none duplicated on a sole case.
     expect(rows).toHaveLength(8)
     expect(rows.every((r) => r.applicant === 'joint')).toBe(true)
   })
@@ -75,17 +79,14 @@ describe('buildRequirements', () => {
     const rows = buildRequirements(DEFAULT_TEMPLATE, soleInput)
 
     expect(rows.some((r) => r.applicant === 'applicant_2')).toBe(false)
-    expect(rows.some((r) => r.template_key === 'applicant_2_contact')).toBe(false)
   })
 
   it('creates the second applicant requirements from day zero on a joint application', () => {
     const rows = buildRequirements(DEFAULT_TEMPLATE, jointInput)
     const forApplicant2 = rows.filter((r) => r.applicant === 'applicant_2')
 
-    // ID, income evidence and employment details are per applicant. The
-    // contact details item belongs to applicant 2 as well.
+    // ID, income evidence and employment details are per applicant.
     expect(forApplicant2.map((r) => r.template_key).sort()).toEqual([
-      'applicant_2_contact',
       'employment_details',
       'identification',
       'income_evidence',
@@ -101,7 +102,7 @@ describe('buildRequirements', () => {
       'identification',
       'income_evidence',
     ])
-    expect(rows).toHaveLength(12)
+    expect(rows).toHaveLength(11)
   })
 
   it('names whose item is whose, so the shared list is not ambiguous', () => {
@@ -124,24 +125,34 @@ describe('buildRequirements', () => {
     ])
   })
 
-  it('puts the second applicant name into the wording that asks for their details', () => {
+  it('never asks the client for the second applicant email and mobile', () => {
+    // The adviser types them in when the case is created, so there is nothing
+    // left for the client to supply.
     const rows = buildRequirements(DEFAULT_TEMPLATE, jointInput)
-    const contact = rows.find((r) => r.template_key === 'applicant_2_contact')
-
-    expect(contact?.description).toBe(
-      'We require the email address and mobile number for Sarah Walker for the application.',
-    )
-    expect(contact?.description).not.toContain('{{')
+    expect(rows.some((r) => /email|mobile/i.test(r.label))).toBe(false)
   })
 
   it('leaves an item that already names its owner alone', () => {
-    const rows = buildRequirements(DEFAULT_TEMPLATE, jointInput)
-    const contact = rows.find((r) => r.template_key === 'applicant_2_contact')
+    // An item tied to one applicant without being duplicated appears once, so
+    // there is nothing to tell it apart from. Naming it again would give
+    // "... for the second applicant - second applicant".
+    const template = [
+      {
+        key: 'one_off',
+        type: 'upload' as const,
+        label: 'Something for the second applicant',
+        description: '',
+        perApplicant: false,
+        jointOnly: true,
+        applicantSlot: 'applicant_2' as const,
+        isMandatory: true,
+        sortOrder: 1,
+      },
+    ]
+    const [row] = buildRequirements(template, jointInput)
 
-    // It appears once, so there is nothing to tell it apart from. Naming it
-    // again gives "... for the second applicant - second applicant".
-    expect(contact?.label).toBe('Contact details for the second applicant')
-    expect(contact?.applicant).toBe('applicant_2')
+    expect(row.label).toBe('Something for the second applicant')
+    expect(row.applicant).toBe('applicant_2')
   })
 
   it('leaves labels unadorned on a sole application', () => {
@@ -290,7 +301,7 @@ describe('createCase', () => {
     await createCase(jointInput, store)
 
     expect(written.cases).toHaveLength(1)
-    expect(written.requirements).toHaveLength(12)
+    expect(written.requirements).toHaveLength(11)
     expect(written.events).toHaveLength(1)
   })
 
@@ -317,14 +328,64 @@ describe('createCase', () => {
     expect(written.events[0].detail).toMatchObject({ requirement_count: 8 })
   })
 
-  it('leaves the second applicant blank until the client supplies the details', async () => {
+  it('stores second applicant contact details the adviser typed in', async () => {
     const { store, written } = recordingStore()
 
-    await createCase(jointInput, store)
+    await createCase(
+      { ...jointInput, applicant2Email: 'John@Example.com', applicant2Mobile: '+447700900456' },
+      store,
+    )
 
-    expect(written.cases[0].is_joint).toBe(true)
+    expect(written.cases[0].applicant_2_email).toBe('john@example.com')
+    expect(written.cases[0].applicant_2_mobile).toBe('+447700900456')
+  })
+
+  it('never stores second applicant contact details on a sole case', async () => {
+    const { store, written } = recordingStore()
+
+    await createCase(
+      { ...soleInput, applicant2Email: 'left@over.com', applicant2Mobile: '+447700900456' },
+      store,
+    )
+
     expect(written.cases[0].applicant_2_email).toBeNull()
     expect(written.cases[0].applicant_2_mobile).toBeNull()
+  })
+
+  it('stores each part of both names separately, the way lenders ask for them', async () => {
+    const { store, written } = recordingStore()
+
+    await createCase(
+      {
+        ...jointInput,
+        applicant1Name: 'David James Walker',
+        applicant1Parts: { first: 'David', middle: 'James', surname: 'Walker' },
+        applicant2Name: 'Sarah Walker',
+        applicant2Parts: { first: 'Sarah', middle: null, surname: 'Walker' },
+      },
+      store,
+    )
+
+    expect(written.cases[0]).toMatchObject({
+      applicant_1_name: 'David James Walker',
+      applicant_1_first_name: 'David',
+      applicant_1_middle_name: 'James',
+      applicant_1_surname: 'Walker',
+      applicant_2_first_name: 'Sarah',
+      applicant_2_middle_name: null,
+      applicant_2_surname: 'Walker',
+    })
+  })
+
+  it('labels items with the real first name, not the first word typed', async () => {
+    const rows = buildRequirements(DEFAULT_TEMPLATE, {
+      ...jointInput,
+      applicant1Name: 'Mary Ann Walker',
+      applicant1Parts: { first: 'Mary Ann', middle: null, surname: 'Walker' },
+    })
+    const id = rows.find((r) => r.template_key === 'identification' && r.applicant === 'applicant_1')
+
+    expect(id?.label).toBe('Photo identification - Mary Ann')
   })
 
   it('keeps the second applicant name the adviser typed in', async () => {

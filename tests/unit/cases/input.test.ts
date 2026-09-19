@@ -6,11 +6,17 @@ const complete = {
   lender: 'Together',
   loan_amount: '25000',
   home_improvement_amount: '18000',
-  applicant_1_name: 'David Walker',
+  applicant_1_first_name: 'David',
+  applicant_1_middle_name: '',
+  applicant_1_surname: 'Walker',
   applicant_1_email: 'David@Example.com',
   applicant_1_mobile: '07700 900123',
   is_joint: 'on',
-  applicant_2_name: 'Sarah Walker',
+  applicant_2_first_name: 'Sarah',
+  applicant_2_middle_name: '',
+  applicant_2_surname: 'Walker',
+  applicant_2_email: 'Sarah@Example.com',
+  applicant_2_mobile: '07700 900456',
   employment_type: '',
 }
 
@@ -76,9 +82,13 @@ describe('parseCaseForm', () => {
       homeImprovementAmount: 18000,
       isJoint: true,
       applicant1Name: 'David Walker',
+      applicant1Parts: { first: 'David', middle: null, surname: 'Walker' },
       applicant1Email: 'david@example.com',
       applicant1Mobile: '+447700900123',
       applicant2Name: 'Sarah Walker',
+      applicant2Parts: { first: 'Sarah', middle: null, surname: 'Walker' },
+      applicant2Email: 'sarah@example.com',
+      applicant2Mobile: '+447700900456',
       employmentType: null,
     })
   })
@@ -88,22 +98,124 @@ describe('parseCaseForm', () => {
     expect(result.ok && result.input.isJoint).toBe(false)
   })
 
-  it('asks for the second applicant name on a joint case', () => {
-    const result = parse({ applicant_2_name: '' })
+  it('builds the full name with the middle name in its place', () => {
+    const result = parse({ applicant_1_middle_name: 'James Robert' })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.input.applicant1Name).toBe('David James Robert Walker')
+    expect(result.input.applicant1Parts).toEqual({
+      first: 'David',
+      middle: 'James Robert',
+      surname: 'Walker',
+    })
+  })
+
+  it('takes a middle name for the second applicant too', () => {
+    const result = parse({ applicant_2_middle_name: 'Anne' })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.input.applicant2Name).toBe('Sarah Anne Walker')
+    expect(result.input.applicant2Parts?.middle).toBe('Anne')
+  })
+
+  it('treats a blank middle name as none, not as an empty word', () => {
+    const result = parse({ applicant_1_middle_name: '   ' })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.input.applicant1Name).toBe('David Walker')
+    expect(result.input.applicant1Parts?.middle).toBeNull()
+  })
+
+  it('keeps a double-barrelled surname whole', () => {
+    const result = parse({ applicant_1_surname: 'Smith-Jones' })
+    expect(result.ok && result.input.applicant1Parts?.surname).toBe('Smith-Jones')
+  })
+
+  it('insists on a first name and surname for the first applicant', () => {
+    const result = parse({ applicant_1_first_name: '', applicant_1_surname: '' })
 
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.errors.applicant_2_name).toBeTruthy()
+    expect(result.errors.applicant_1_first_name).toBeTruthy()
+    expect(result.errors.applicant_1_surname).toBeTruthy()
+  })
+
+  it('asks for the second applicant name on a joint case', () => {
+    const result = parse({ applicant_2_first_name: '', applicant_2_surname: '' })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.applicant_2_first_name).toBeTruthy()
+    expect(result.errors.applicant_2_surname).toBeTruthy()
   })
 
   it('does not ask for a second applicant on a sole case', () => {
-    const result = parse({ is_joint: '', applicant_2_name: '' })
+    const result = parse({ is_joint: '', applicant_2_first_name: '', applicant_2_surname: '' })
     expect(result.ok).toBe(true)
   })
 
   it('throws away a second applicant name left behind by unticking the box', () => {
-    const result = parse({ is_joint: '', applicant_2_name: 'Sarah Walker' })
-    expect(result.ok && result.input.applicant2Name).toBe(null)
+    const result = parse({ is_joint: '' })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.input.applicant2Name).toBeNull()
+    expect(result.input.applicant2Parts).toBeNull()
+  })
+
+  it('takes the second applicant email and mobile when given', () => {
+    const result = parse({
+      applicant_2_email: 'Sarah@Example.com',
+      applicant_2_mobile: '07700 900456',
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.input.applicant2Email).toBe('sarah@example.com')
+    expect(result.input.applicant2Mobile).toBe('+447700900456')
+  })
+
+  it('insists on the second applicant email and mobile on a joint case', () => {
+    // Nothing on the client list asks for them any more, so the form is the
+    // only place they can come from.
+    const result = parse({ applicant_2_email: '', applicant_2_mobile: '' })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.applicant_2_email).toBeTruthy()
+    expect(result.errors.applicant_2_mobile).toBeTruthy()
+  })
+
+  it('catches a mistyped second applicant email', () => {
+    const result = parse({ applicant_2_email: 'sarah@example' })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.applicant_2_email).toBeTruthy()
+  })
+
+  it('catches a second applicant number that cannot receive a text', () => {
+    const result = parse({ applicant_2_mobile: '01412211234' })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.applicant_2_mobile).toBeTruthy()
+  })
+
+  it('ignores second applicant contact details left behind on a sole case', () => {
+    const result = parse({
+      is_joint: '',
+      applicant_2_email: 'not-even-valid',
+      applicant_2_mobile: 'rubbish',
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.input.applicant2Email).toBeNull()
+    expect(result.input.applicant2Mobile).toBeNull()
   })
 
   it('keeps the home improvements figure apart from the loan', () => {
@@ -138,13 +250,19 @@ describe('parseCaseForm', () => {
   })
 
   it('insists on the things a case cannot exist without', () => {
-    const result = parse({ case_ref: '', applicant_1_name: '', applicant_1_email: '' })
+    const result = parse({
+      case_ref: '',
+      applicant_1_first_name: '',
+      applicant_1_surname: '',
+      applicant_1_email: '',
+    })
 
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(Object.keys(result.errors).sort()).toEqual([
       'applicant_1_email',
-      'applicant_1_name',
+      'applicant_1_first_name',
+      'applicant_1_surname',
       'case_ref',
     ])
   })

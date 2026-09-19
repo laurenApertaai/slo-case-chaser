@@ -40,6 +40,40 @@ function Field({
   )
 }
 
+/**
+ * First, middle and surname as three boxes, because lenders take them
+ * separately and a missing middle name is a mismatch against the applicant's ID.
+ */
+function NameFields({
+  prefix,
+  errors,
+}: {
+  prefix: 'applicant_1' | 'applicant_2'
+  errors: Record<string, string>
+}) {
+  return (
+    <div className="grid gap-5 sm:grid-cols-3">
+      <Field name={`${prefix}_first_name`} label="First name" errors={errors}>
+        <input id={`${prefix}_first_name`} name={`${prefix}_first_name`} required className={FIELD} />
+      </Field>
+
+      <div>
+        <label htmlFor={`${prefix}_middle_name`} className={LABEL}>
+          Middle name(s)
+        </label>
+        <input id={`${prefix}_middle_name`} name={`${prefix}_middle_name`} className={FIELD} />
+        <p className="mt-1 text-xs font-medium text-red-700">
+          MUST be added if they have a middle name
+        </p>
+      </div>
+
+      <Field name={`${prefix}_surname`} label="Surname" errors={errors}>
+        <input id={`${prefix}_surname`} name={`${prefix}_surname`} required className={FIELD} />
+      </Field>
+    </div>
+  )
+}
+
 export function NewCaseForm() {
   const [isJoint, setIsJoint] = useState(false)
   const [state, formAction, pending] = useActionState<NewCaseState, FormData>(createCaseAction, {
@@ -145,9 +179,7 @@ export function NewCaseForm() {
 
         <hr className="border-slate-200" />
 
-        <Field name="applicant_1_name" label="Client name" errors={errors}>
-          <input id="applicant_1_name" name="applicant_1_name" required className={FIELD} />
-        </Field>
+        <NameFields prefix="applicant_1" errors={errors} />
 
         <div className="grid gap-5 sm:grid-cols-2">
           <Field name="applicant_1_email" label="Email address" errors={errors}>
@@ -195,20 +227,37 @@ export function NewCaseForm() {
           </label>
 
           {isJoint && (
-            <div className="mt-4 border-t border-slate-200 pt-4">
-              <Field
-                name="applicant_2_name"
-                label="Second applicant name"
-                hint="Used to label their items, so the client can tell whose is whose. Their email and mobile are one of the items on the list, not something you type here."
-                errors={errors}
-              >
-                <input
-                  id="applicant_2_name"
-                  name="applicant_2_name"
-                  required
-                  className={FIELD}
-                />
-              </Field>
+            <div className="mt-4 space-y-5 border-t border-slate-200 pt-4">
+              <p className="text-sm font-medium text-slate-700">Second applicant</p>
+
+              <NameFields prefix="applicant_2" errors={errors} />
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field name="applicant_2_email" label="Email address" errors={errors}>
+                  <input
+                    id="applicant_2_email"
+                    name="applicant_2_email"
+                    type="email"
+                    required
+                    className={FIELD}
+                  />
+                </Field>
+
+                <Field
+                  name="applicant_2_mobile"
+                  label="Mobile number"
+                  hint="UK mobile"
+                  errors={errors}
+                >
+                  <input
+                    id="applicant_2_mobile"
+                    name="applicant_2_mobile"
+                    type="tel"
+                    required
+                    className={FIELD}
+                  />
+                </Field>
+              </div>
             </div>
           )}
         </div>

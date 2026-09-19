@@ -8,7 +8,7 @@
  * These messages are read by advisers, not clients, so the contraction rule
  * does not bind here. They are written plainly anyway.
  */
-import type { CreateCaseInput } from '@/lib/cases/create'
+import type { CreateCaseInput, NameParts } from '@/lib/cases/create'
 import type { EmploymentType } from '@/lib/cases/employment'
 
 export type FieldErrors = Record<string, string>
@@ -67,6 +67,32 @@ export function parseAmount(raw: string): number | null | 'invalid' {
   return value
 }
 
+/** First, middle and surname joined the way they read on an application. */
+export function fullName(parts: NameParts): string {
+  return [parts.first, parts.middle, parts.surname].filter(Boolean).join(' ')
+}
+
+/**
+ * Reads one applicant's name out of the form, reporting any missing part
+ * against the field it belongs to.
+ */
+function readName(
+  read: (key: string) => string,
+  prefix: 'applicant_1' | 'applicant_2',
+  errors: FieldErrors,
+  who: string,
+): NameParts | null {
+  const first = read(`${prefix}_first_name`)
+  const middle = read(`${prefix}_middle_name`)
+  const surname = read(`${prefix}_surname`)
+
+  if (!first) errors[`${prefix}_first_name`] = `Enter the ${who} first name.`
+  if (!surname) errors[`${prefix}_surname`] = `Enter the ${who} surname.`
+  if (!first || !surname) return null
+
+  return { first, middle: middle || null, surname }
+}
+
 function isEmail(value: string): boolean {
   // Deliberately loose. The only mistakes worth catching here are the obvious
   // ones; whether an address actually receives mail is answered by sending to it.
@@ -83,8 +109,7 @@ export function parseCaseForm(
   const caseRef = read('case_ref')
   if (!caseRef) errors.case_ref = 'Give the case a reference.'
 
-  const name = read('applicant_1_name')
-  if (!name) errors.applicant_1_name = 'Enter the client name.'
+  const name1 = readName(read, 'applicant_1', errors, 'client')
 
   const email = read('applicant_1_email').toLowerCase()
   if (!email) errors.applicant_1_email = 'Enter the client email address.'
@@ -105,9 +130,23 @@ export function parseCaseForm(
   }
 
   const isJoint = read('is_joint') !== ''
-  const applicant2Name = read('applicant_2_name')
-  if (isJoint && !applicant2Name) {
-    errors.applicant_2_name = 'Enter the second applicant name.'
+  const name2 = isJoint ? readName(read, 'applicant_2', errors, 'second applicant') : null
+
+  // On a joint case the second applicant's email and mobile are required, the
+  // same as the first applicant's. Nothing on the client's list asks for them,
+  // so this form is the only place they come from. Anything left in these boxes
+  // on a sole case is ignored, not validated.
+  const email2 = isJoint ? read('applicant_2_email').toLowerCase() : ''
+  if (isJoint && !email2) errors.applicant_2_email = 'Enter the second applicant email address.'
+  else if (email2 && !isEmail(email2)) {
+    errors.applicant_2_email = 'That does not look like an email address.'
+  }
+
+  const rawMobile2 = isJoint ? read('applicant_2_mobile') : ''
+  const mobile2 = rawMobile2 ? normaliseMobile(rawMobile2) : null
+  if (isJoint && !rawMobile2) errors.applicant_2_mobile = 'Enter the second applicant mobile number.'
+  else if (rawMobile2 && !mobile2) {
+    errors.applicant_2_mobile = 'That does not look like a UK mobile number.'
   }
 
   if (Object.keys(errors).length > 0) return { ok: false, errors }
@@ -124,12 +163,16 @@ export function parseCaseForm(
       loanAmount: amount as number | null,
       homeImprovementAmount: improvements as number | null,
       isJoint,
-      applicant1Name: name,
+      applicant1Name: fullName(name1 as NameParts),
+      applicant1Parts: name1,
       applicant1Email: email,
       applicant1Mobile: mobile as string,
       // Only meaningful on a joint case. A name left over from ticking the box
       // and unticking it again must not be stored.
-      applicant2Name: isJoint ? applicant2Name : null,
+      applicant2Name: name2 ? fullName(name2) : null,
+      applicant2Parts: name2,
+      applicant2Email: email2 || null,
+      applicant2Mobile: mobile2,
       employmentType: EMPLOYMENT_TYPES.includes(employment) ? employment : null,
     },
   }

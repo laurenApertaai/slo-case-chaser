@@ -45,6 +45,28 @@ function money(amount: number | null): string {
   }).format(amount)
 }
 
+/** One applicant's contact details. Blank rather than hidden when missing, so a gap is obvious. */
+function Applicant({
+  heading,
+  name,
+  email,
+  mobile,
+}: {
+  heading: string
+  name: string | null
+  email: string | null
+  mobile: string | null
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <p className="text-xs uppercase tracking-wide text-slate-500">{heading}</p>
+      <p className="mt-1 font-medium text-slate-900">{name ?? '—'}</p>
+      <p className="mt-1 text-sm text-slate-600">{email ?? 'No email address'}</p>
+      <p className="text-sm text-slate-600">{mobile ?? 'No mobile number'}</p>
+    </div>
+  )
+}
+
 async function portalUrl(token: string): Promise<string> {
   const head = await headers()
   const host = head.get('x-forwarded-host') ?? head.get('host') ?? 'localhost:3000'
@@ -95,6 +117,26 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
           </ul>
         )}
 
+        <section
+          className={`mt-6 grid gap-4 ${record.is_joint ? 'sm:grid-cols-2' : ''}`}
+          aria-label="Applicants"
+        >
+          <Applicant
+            heading={record.is_joint ? 'Applicant 1' : 'Applicant'}
+            name={record.applicant_1_name}
+            email={record.applicant_1_email}
+            mobile={record.applicant_1_mobile}
+          />
+          {record.is_joint && (
+            <Applicant
+              heading="Applicant 2"
+              name={record.applicant_2_name}
+              email={record.applicant_2_email}
+              mobile={record.applicant_2_mobile}
+            />
+          )}
+        </section>
+
         <section className="mt-6 grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border border-slate-200 bg-white p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Progress</p>
@@ -126,6 +168,30 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
               {record.pack_issued_at ? 'chase clock running' : 'not sent yet'}
             </p>
           </div>
+        </section>
+
+        <section className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Applicant 1</p>
+            <p className="mt-1 font-medium text-slate-900">{record.applicant_1_name}</p>
+            <p className="mt-1 text-sm text-slate-600">{record.applicant_1_email}</p>
+            <p className="text-sm text-slate-600">{record.applicant_1_mobile}</p>
+          </div>
+
+          {record.is_joint && (
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Applicant 2</p>
+              <p className="mt-1 font-medium text-slate-900">
+                {record.applicant_2_name ?? 'Name not given'}
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                {record.applicant_2_email ?? 'Email not given yet'}
+              </p>
+              <p className="text-sm text-slate-600">
+                {record.applicant_2_mobile ?? 'Mobile not given yet'}
+              </p>
+            </div>
+          )}
         </section>
 
         <section className="mt-6 rounded-xl border border-slate-200 bg-white p-4">

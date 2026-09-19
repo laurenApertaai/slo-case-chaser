@@ -67,8 +67,8 @@ describe('household bill fields', () => {
 })
 
 describe('default template', () => {
-  it('contains the nine items of the standard pack', () => {
-    expect(DEFAULT_TEMPLATE).toHaveLength(9)
+  it('contains the eight items of the standard pack', () => {
+    expect(DEFAULT_TEMPLATE).toHaveLength(8)
   })
 
   it('uses unique keys and unique sort orders', () => {
@@ -89,24 +89,14 @@ describe('default template', () => {
     expect(income?.perApplicant).toBe(true)
   })
 
-  it('only asks for the second applicant contact details on joint cases', () => {
-    const contact = DEFAULT_TEMPLATE.find((i) => i.key === 'applicant_2_contact')
-    expect(contact?.jointOnly).toBe(true)
+  it('does not ask the client for the second applicant email and mobile', () => {
+    // The adviser enters both when the case is created.
+    expect(DEFAULT_TEMPLATE.some((i) => i.key === 'applicant_2_contact')).toBe(false)
   })
 
   it('carries the home improvements amount token on the loan purpose question', () => {
     const improvements = DEFAULT_TEMPLATE.find((i) => i.key === 'home_improvements')
     expect(improvements?.description).toContain('{{home_improvement_amount}}')
-  })
-
-  it('carries the second applicant name token on their contact details question', () => {
-    const contact = DEFAULT_TEMPLATE.find((i) => i.key === 'applicant_2_contact')
-    expect(contact?.description).toContain('{{applicant_2_name}}')
-  })
-
-  it('no longer asks the client for a name we already hold', () => {
-    const contact = DEFAULT_TEMPLATE.find((i) => i.key === 'applicant_2_contact')
-    expect(contact?.fields?.map((f) => f.key)).toEqual(['partner_email', 'partner_mobile'])
   })
 
   it('attaches all nineteen bill fields to the household bills group', () => {
