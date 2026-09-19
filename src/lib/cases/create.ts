@@ -176,10 +176,10 @@ export function formatLoanAmount(amount: number | null): string {
 }
 
 function fillTokens(text: string, input: CreateCaseInput): string {
-  // Where no separate improvements figure is given, the whole loan is for the
-  // works, which is the common case. Falls back again to plain words so the
-  // sentence still reads if neither is known.
-  const improvements = input.homeImprovementAmount ?? input.loanAmount
+  // The figure comes from the Amount of HI box and nowhere else. It never falls
+  // back to the loan amount: on a Consol & HI case that would put the wrong
+  // number in front of the client.
+  const improvements = input.homeImprovementAmount
 
   return text
     .replaceAll('{{loan_amount}}', formatLoanAmount(input.loanAmount))

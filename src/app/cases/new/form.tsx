@@ -150,12 +150,21 @@ export function NewCaseForm() {
             />
           </Field>
 
-          <Field name="loan_purpose" label="Loan purpose" errors={errors}>
-            <input id="loan_purpose" name="loan_purpose" className={FIELD} />
+          <Field name="home_improvement_amount" label="Amount of HI (if any)" errors={errors}>
+            <input
+              id="home_improvement_amount"
+              name="home_improvement_amount"
+              inputMode="decimal"
+              className={FIELD}
+            />
           </Field>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
+          <Field name="loan_purpose" label="Loan purpose" errors={errors}>
+            <input id="loan_purpose" name="loan_purpose" className={FIELD} />
+          </Field>
+
           <Field
             name="employment_type"
             label="How the client is paid"

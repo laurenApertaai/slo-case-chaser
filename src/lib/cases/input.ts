@@ -128,6 +128,11 @@ export function parseCaseForm(
 
   const loanPurpose = read('loan_purpose')
 
+  const improvements = parseAmount(read('home_improvement_amount'))
+  if (improvements === 'invalid') {
+    errors.home_improvement_amount = 'Enter the amount of HI in figures, for example 20000.'
+  }
+
   const isJoint = read('is_joint') !== ''
   const name2 = isJoint ? readName(read, 'applicant_2', errors, 'second applicant') : null
 
@@ -144,9 +149,7 @@ export function parseCaseForm(
       lender: lender || null,
       loanAmount: amount as number | null,
       loanPurpose: loanPurpose || null,
-      // No separate figure is asked for, so the client's Loan Purpose question
-      // quotes the loan amount.
-      homeImprovementAmount: null,
+      homeImprovementAmount: improvements as number | null,
       isJoint,
       applicant1Name: fullName(name1 as NameParts),
       applicant1Parts: name1,

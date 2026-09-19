@@ -185,12 +185,13 @@ describe('buildRequirements', () => {
     expect(improvements?.description).not.toContain('{{')
   })
 
-  it('uses the whole loan when no separate improvements figure is given', () => {
-    const rows = buildRequirements(DEFAULT_TEMPLATE, soleInput)
+  it('never quotes the whole loan as the HI figure', () => {
+    // The figure comes from the Amount of HI box only. On a Consol & HI case
+    // the loan amount is the wrong number to put in front of the client.
+    const rows = buildRequirements(DEFAULT_TEMPLATE, { ...soleInput, homeImprovementAmount: null })
     const improvements = rows.find((r) => r.template_key === 'home_improvements')
 
-    // The common case: the whole loan is for the works.
-    expect(improvements?.description).toContain('In terms of the £25,000 for home improvements,')
+    expect(improvements?.description).not.toContain('£25,000')
     expect(improvements?.description).not.toContain('{{')
   })
 

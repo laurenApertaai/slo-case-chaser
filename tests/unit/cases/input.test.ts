@@ -5,6 +5,7 @@ const complete = {
   case_ref: 'SLO-2026-0412',
   lender: 'Together',
   loan_amount: '25000',
+  home_improvement_amount: '20000',
   loan_purpose: 'Consol & HI',
   applicant_1_first_name: 'David',
   applicant_1_middle_name: '',
@@ -78,7 +79,7 @@ describe('parseCaseForm', () => {
       lender: 'Together',
       loanAmount: 25000,
       loanPurpose: 'Consol & HI',
-      homeImprovementAmount: null,
+      homeImprovementAmount: 20000,
       isJoint: true,
       applicant1Name: 'David Walker',
       applicant1Parts: { first: 'David', middle: null, surname: 'Walker' },
@@ -178,6 +179,24 @@ describe('parseCaseForm', () => {
   it('takes the loan purpose as words, exactly as typed', () => {
     const result = parse({ loan_purpose: '  Consol & HI  ' })
     expect(result.ok && result.input.loanPurpose).toBe('Consol & HI')
+  })
+
+  it('takes the amount of HI as a figure', () => {
+    const result = parse({ home_improvement_amount: '£20,000' })
+    expect(result.ok && result.input.homeImprovementAmount).toBe(20000)
+  })
+
+  it('allows the amount of HI to be left blank when there is none', () => {
+    const result = parse({ home_improvement_amount: '' })
+    expect(result.ok && result.input.homeImprovementAmount).toBe(null)
+  })
+
+  it('reports an amount of HI that is not a figure', () => {
+    const result = parse({ home_improvement_amount: 'about half' })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.home_improvement_amount).toBeTruthy()
   })
 
   it('leaves the loan purpose empty rather than inventing one', () => {
