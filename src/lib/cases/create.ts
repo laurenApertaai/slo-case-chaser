@@ -239,9 +239,16 @@ function labelFor(
 /** Leaves room between template items so an ad-hoc item can be slotted in later. */
 const SORT_STEP = 10
 
+/** The item that asks the client to break down the home improvements. */
+const LOAN_PURPOSE = 'home_improvements'
+
 function slotsFor(item: TemplateItem, input: CreateCaseInput): ApplicantSlot[] {
   const isJoint = input.isJoint
   if (item.jointOnly && !isJoint) return []
+
+  // The Loan Purpose question asks for a breakdown of the home improvements.
+  // With no HI on the case it makes no sense to the client, so it is left off.
+  if (item.key === LOAN_PURPOSE && !((input.homeImprovementAmount ?? 0) > 0)) return []
 
   if (item.perApplicant) return isJoint ? ['applicant_1', 'applicant_2'] : ['joint']
   return [item.applicantSlot ?? 'joint']

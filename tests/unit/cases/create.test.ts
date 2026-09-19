@@ -20,7 +20,7 @@ const soleInput: CreateCaseInput = {
   caseRef: 'SLO-2026-0412',
   lender: 'Together',
   loanAmount: 25000,
-  homeImprovementAmount: null,
+  homeImprovementAmount: 25000,
   loanPurpose: null,
   isJoint: false,
   applicant1Name: 'David Walker',
@@ -185,26 +185,20 @@ describe('buildRequirements', () => {
     expect(improvements?.description).not.toContain('{{')
   })
 
-  it('never quotes the whole loan as the HI figure', () => {
-    // The figure comes from the Amount of HI box only. On a Consol & HI case
-    // the loan amount is the wrong number to put in front of the client.
-    const rows = buildRequirements(DEFAULT_TEMPLATE, { ...soleInput, homeImprovementAmount: null })
-    const improvements = rows.find((r) => r.template_key === 'home_improvements')
+  it('leaves Loan Purpose off the list when there is no HI', () => {
+    // The question asks for a breakdown of the home improvements. With none,
+    // it makes no sense to the client.
+    const blank = buildRequirements(DEFAULT_TEMPLATE, { ...soleInput, homeImprovementAmount: null })
+    const zero = buildRequirements(DEFAULT_TEMPLATE, { ...soleInput, homeImprovementAmount: 0 })
 
-    expect(improvements?.description).not.toContain('£25,000')
-    expect(improvements?.description).not.toContain('{{')
+    expect(blank.some((r) => r.template_key === 'home_improvements')).toBe(false)
+    expect(zero.some((r) => r.template_key === 'home_improvements')).toBe(false)
+    expect(blank).toHaveLength(7)
   })
 
-  it('reads sensibly when no amount is known at all', () => {
-    const rows = buildRequirements(DEFAULT_TEMPLATE, {
-      ...soleInput,
-      loanAmount: null,
-      homeImprovementAmount: null,
-    })
-    const improvements = rows.find((r) => r.template_key === 'home_improvements')
-
-    expect(improvements?.description).toContain('In terms of the loan amount for home improvements,')
-    expect(improvements?.description).not.toContain('{{')
+  it('keeps Loan Purpose on the list whenever there is any HI', () => {
+    const rows = buildRequirements(DEFAULT_TEMPLATE, { ...soleInput, homeImprovementAmount: 5000 })
+    expect(rows.some((r) => r.template_key === 'home_improvements')).toBe(true)
   })
 
   it('uses the combined income wording until the client says how they are paid', () => {
