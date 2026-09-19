@@ -21,6 +21,7 @@ const soleInput: CreateCaseInput = {
   lender: 'Together',
   loanAmount: 25000,
   homeImprovementAmount: null,
+  loanPurpose: null,
   isJoint: false,
   applicant1Name: 'David Walker',
   applicant1Email: 'david@example.com',
@@ -35,8 +36,6 @@ const jointInput: CreateCaseInput = {
   ...soleInput,
   isJoint: true,
   applicant2Name: 'Sarah Walker',
-  applicant2Email: 'sarah@example.com',
-  applicant2Mobile: '+447700900456',
 }
 
 /** Records everything written, so a test can assert on it without a database. */
@@ -70,7 +69,7 @@ describe('buildRequirements', () => {
   it('creates one row per item on a sole application', () => {
     const rows = buildRequirements(DEFAULT_TEMPLATE, soleInput)
 
-    // Eight template items, none duplicated on a sole case.
+    // Nine template items, one of which is joint only, none duplicated.
     expect(rows).toHaveLength(8)
     expect(rows.every((r) => r.applicant === 'joint')).toBe(true)
   })
@@ -85,8 +84,10 @@ describe('buildRequirements', () => {
     const rows = buildRequirements(DEFAULT_TEMPLATE, jointInput)
     const forApplicant2 = rows.filter((r) => r.applicant === 'applicant_2')
 
-    // ID, income evidence and employment details are per applicant.
+    // ID, income evidence and employment details are per applicant. The
+    // contact details item belongs to applicant 2 as well.
     expect(forApplicant2.map((r) => r.template_key).sort()).toEqual([
+      'applicant_2_contact',
       'employment_details',
       'identification',
       'income_evidence',
@@ -102,7 +103,7 @@ describe('buildRequirements', () => {
       'identification',
       'income_evidence',
     ])
-    expect(rows).toHaveLength(11)
+    expect(rows).toHaveLength(12)
   })
 
   it('names whose item is whose, so the shared list is not ambiguous', () => {
@@ -125,11 +126,20 @@ describe('buildRequirements', () => {
     ])
   })
 
-  it('never asks the client for the second applicant email and mobile', () => {
-    // The adviser types them in when the case is created, so there is nothing
-    // left for the client to supply.
+  it('asks the client for the second applicant email and mobile, by name', () => {
     const rows = buildRequirements(DEFAULT_TEMPLATE, jointInput)
-    expect(rows.some((r) => /email|mobile/i.test(r.label))).toBe(false)
+    const contact = rows.find((r) => r.template_key === 'applicant_2_contact')
+
+    expect(contact?.label).toBe('Contact details for the second applicant')
+    expect(contact?.applicant).toBe('applicant_2')
+    expect(contact?.description).toBe(
+      'We require the email address and mobile number for Sarah Walker for the application.',
+    )
+  })
+
+  it('never asks a sole applicant for a second applicant', () => {
+    const rows = buildRequirements(DEFAULT_TEMPLATE, soleInput)
+    expect(rows.some((r) => r.template_key === 'applicant_2_contact')).toBe(false)
   })
 
   it('leaves an item that already names its owner alone', () => {
@@ -301,7 +311,7 @@ describe('createCase', () => {
     await createCase(jointInput, store)
 
     expect(written.cases).toHaveLength(1)
-    expect(written.requirements).toHaveLength(11)
+    expect(written.requirements).toHaveLength(12)
     expect(written.events).toHaveLength(1)
   })
 
@@ -402,6 +412,14 @@ describe('createCase', () => {
     await createCase({ ...soleInput, applicant2Name: 'Left over from a tickbox' }, store)
 
     expect(written.cases[0].applicant_2_name).toBeNull()
+  })
+
+  it('records the loan purpose in the adviser own words', async () => {
+    const { store, written } = recordingStore()
+
+    await createCase({ ...soleInput, loanPurpose: 'Consol & HI' }, store)
+
+    expect(written.cases[0].loan_purpose).toBe('Consol & HI')
   })
 
   it('records the home improvements figure separately from the loan', async () => {

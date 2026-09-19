@@ -121,33 +121,15 @@ export function parseCaseForm(
   else if (!mobile) errors.applicant_1_mobile = 'That does not look like a UK mobile number.'
 
   const amount = parseAmount(read('loan_amount'))
-  if (amount === 'invalid') errors.loan_amount = 'Enter the loan amount in figures, for example 25000.'
-
-  const improvements = parseAmount(read('home_improvement_amount'))
-  if (improvements === 'invalid') {
-    errors.home_improvement_amount =
-      'Enter the home improvements amount in figures, for example 20000.'
+  if (amount === null) errors.loan_amount = 'Enter the loan amount.'
+  else if (amount === 'invalid') {
+    errors.loan_amount = 'Enter the loan amount in figures, for example 25000.'
   }
+
+  const loanPurpose = read('loan_purpose')
 
   const isJoint = read('is_joint') !== ''
   const name2 = isJoint ? readName(read, 'applicant_2', errors, 'second applicant') : null
-
-  // On a joint case the second applicant's email and mobile are required, the
-  // same as the first applicant's. Nothing on the client's list asks for them,
-  // so this form is the only place they come from. Anything left in these boxes
-  // on a sole case is ignored, not validated.
-  const email2 = isJoint ? read('applicant_2_email').toLowerCase() : ''
-  if (isJoint && !email2) errors.applicant_2_email = 'Enter the second applicant email address.'
-  else if (email2 && !isEmail(email2)) {
-    errors.applicant_2_email = 'That does not look like an email address.'
-  }
-
-  const rawMobile2 = isJoint ? read('applicant_2_mobile') : ''
-  const mobile2 = rawMobile2 ? normaliseMobile(rawMobile2) : null
-  if (isJoint && !rawMobile2) errors.applicant_2_mobile = 'Enter the second applicant mobile number.'
-  else if (rawMobile2 && !mobile2) {
-    errors.applicant_2_mobile = 'That does not look like a UK mobile number.'
-  }
 
   if (Object.keys(errors).length > 0) return { ok: false, errors }
 
@@ -161,7 +143,10 @@ export function parseCaseForm(
       caseRef,
       lender: lender || null,
       loanAmount: amount as number | null,
-      homeImprovementAmount: improvements as number | null,
+      loanPurpose: loanPurpose || null,
+      // No separate figure is asked for, so the client's Loan Purpose question
+      // quotes the loan amount.
+      homeImprovementAmount: null,
       isJoint,
       applicant1Name: fullName(name1 as NameParts),
       applicant1Parts: name1,
@@ -171,8 +156,10 @@ export function parseCaseForm(
       // and unticking it again must not be stored.
       applicant2Name: name2 ? fullName(name2) : null,
       applicant2Parts: name2,
-      applicant2Email: email2 || null,
-      applicant2Mobile: mobile2,
+      // Not known when the case is created. The client supplies them from the
+      // list, and the adviser can add them to the case later.
+      applicant2Email: null,
+      applicant2Mobile: null,
       employmentType: EMPLOYMENT_TYPES.includes(employment) ? employment : null,
     },
   }

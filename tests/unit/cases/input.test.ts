@@ -5,7 +5,7 @@ const complete = {
   case_ref: 'SLO-2026-0412',
   lender: 'Together',
   loan_amount: '25000',
-  home_improvement_amount: '18000',
+  loan_purpose: 'Consol & HI',
   applicant_1_first_name: 'David',
   applicant_1_middle_name: '',
   applicant_1_surname: 'Walker',
@@ -15,8 +15,6 @@ const complete = {
   applicant_2_first_name: 'Sarah',
   applicant_2_middle_name: '',
   applicant_2_surname: 'Walker',
-  applicant_2_email: 'Sarah@Example.com',
-  applicant_2_mobile: '07700 900456',
   employment_type: '',
 }
 
@@ -79,7 +77,8 @@ describe('parseCaseForm', () => {
       caseRef: 'SLO-2026-0412',
       lender: 'Together',
       loanAmount: 25000,
-      homeImprovementAmount: 18000,
+      loanPurpose: 'Consol & HI',
+      homeImprovementAmount: null,
       isJoint: true,
       applicant1Name: 'David Walker',
       applicant1Parts: { first: 'David', middle: null, surname: 'Walker' },
@@ -87,8 +86,8 @@ describe('parseCaseForm', () => {
       applicant1Mobile: '+447700900123',
       applicant2Name: 'Sarah Walker',
       applicant2Parts: { first: 'Sarah', middle: null, surname: 'Walker' },
-      applicant2Email: 'sarah@example.com',
-      applicant2Mobile: '+447700900456',
+      applicant2Email: null,
+      applicant2Mobile: null,
       employmentType: null,
     })
   })
@@ -166,51 +165,9 @@ describe('parseCaseForm', () => {
     expect(result.input.applicant2Parts).toBeNull()
   })
 
-  it('takes the second applicant email and mobile when given', () => {
-    const result = parse({
-      applicant_2_email: 'Sarah@Example.com',
-      applicant_2_mobile: '07700 900456',
-    })
-
-    expect(result.ok).toBe(true)
-    if (!result.ok) return
-    expect(result.input.applicant2Email).toBe('sarah@example.com')
-    expect(result.input.applicant2Mobile).toBe('+447700900456')
-  })
-
-  it('insists on the second applicant email and mobile on a joint case', () => {
-    // Nothing on the client list asks for them any more, so the form is the
-    // only place they can come from.
-    const result = parse({ applicant_2_email: '', applicant_2_mobile: '' })
-
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.errors.applicant_2_email).toBeTruthy()
-    expect(result.errors.applicant_2_mobile).toBeTruthy()
-  })
-
-  it('catches a mistyped second applicant email', () => {
-    const result = parse({ applicant_2_email: 'sarah@example' })
-
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.errors.applicant_2_email).toBeTruthy()
-  })
-
-  it('catches a second applicant number that cannot receive a text', () => {
-    const result = parse({ applicant_2_mobile: '01412211234' })
-
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.errors.applicant_2_mobile).toBeTruthy()
-  })
-
-  it('ignores second applicant contact details left behind on a sole case', () => {
-    const result = parse({
-      is_joint: '',
-      applicant_2_email: 'not-even-valid',
-      applicant_2_mobile: 'rubbish',
-    })
+  it('does not ask the adviser for the second applicant email and mobile', () => {
+    // At this stage nobody knows them. They go on the client list instead.
+    const result = parse({})
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
@@ -218,35 +175,30 @@ describe('parseCaseForm', () => {
     expect(result.input.applicant2Mobile).toBeNull()
   })
 
-  it('keeps the home improvements figure apart from the loan', () => {
-    const result = parse({ loan_amount: '£25,000', home_improvement_amount: '£18,000' })
-
-    expect(result.ok).toBe(true)
-    if (!result.ok) return
-    expect(result.input.loanAmount).toBe(25000)
-    expect(result.input.homeImprovementAmount).toBe(18000)
+  it('takes the loan purpose as words, exactly as typed', () => {
+    const result = parse({ loan_purpose: '  Consol & HI  ' })
+    expect(result.ok && result.input.loanPurpose).toBe('Consol & HI')
   })
 
-  it('allows the home improvements figure to be left blank', () => {
-    const result = parse({ home_improvement_amount: '' })
-    expect(result.ok && result.input.homeImprovementAmount).toBe(null)
+  it('leaves the loan purpose empty rather than inventing one', () => {
+    const result = parse({ loan_purpose: '' })
+    expect(result.ok && result.input.loanPurpose).toBe(null)
   })
 
-  it('reports a nonsense home improvements figure', () => {
-    const result = parse({ home_improvement_amount: 'most of it' })
-
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.errors.home_improvement_amount).toBeTruthy()
-  })
-
-  it('allows the lender and the amount to be filled in later', () => {
-    const result = parse({ lender: '', loan_amount: '' })
+  it('allows the lender to be filled in later', () => {
+    const result = parse({ lender: '' })
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.input.lender).toBeNull()
-    expect(result.input.loanAmount).toBeNull()
+  })
+
+  it('insists on the loan amount, because the case cannot go anywhere without it', () => {
+    const result = parse({ loan_amount: '' })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.loan_amount).toBe('Enter the loan amount.')
   })
 
   it('insists on the things a case cannot exist without', () => {

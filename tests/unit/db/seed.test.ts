@@ -67,8 +67,8 @@ describe('household bill fields', () => {
 })
 
 describe('default template', () => {
-  it('contains the eight items of the standard pack', () => {
-    expect(DEFAULT_TEMPLATE).toHaveLength(8)
+  it('contains the nine items of the standard pack', () => {
+    expect(DEFAULT_TEMPLATE).toHaveLength(9)
   })
 
   it('uses unique keys and unique sort orders', () => {
@@ -89,9 +89,11 @@ describe('default template', () => {
     expect(income?.perApplicant).toBe(true)
   })
 
-  it('does not ask the client for the second applicant email and mobile', () => {
-    // The adviser enters both when the case is created.
-    expect(DEFAULT_TEMPLATE.some((i) => i.key === 'applicant_2_contact')).toBe(false)
+  it('asks the client for the second applicant email and mobile on joint cases only', () => {
+    const contact = DEFAULT_TEMPLATE.find((i) => i.key === 'applicant_2_contact')
+    expect(contact?.jointOnly).toBe(true)
+    expect(contact?.description).toContain('{{applicant_2_name}}')
+    expect(contact?.fields?.map((f) => f.key)).toEqual(['partner_email', 'partner_mobile'])
   })
 
   it('carries the home improvements amount token on the loan purpose question', () => {

@@ -134,28 +134,24 @@ export function NewCaseForm() {
             <input id="case_ref" name="case_ref" required className={FIELD} />
           </Field>
 
-          <Field name="lender" label="Lender" hint="Optional" errors={errors}>
+          <Field name="lender" label="Lender" errors={errors}>
             <input id="lender" name="lender" className={FIELD} />
           </Field>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field name="loan_amount" label="Loan amount" hint="Optional" errors={errors}>
-            <input id="loan_amount" name="loan_amount" inputMode="decimal" className={FIELD} />
-          </Field>
-
-          <Field
-            name="home_improvement_amount"
-            label="For home improvements"
-            hint="Optional. Leave blank if the whole loan is for the works."
-            errors={errors}
-          >
+          <Field name="loan_amount" label="Loan amount" errors={errors}>
             <input
-              id="home_improvement_amount"
-              name="home_improvement_amount"
+              id="loan_amount"
+              name="loan_amount"
               inputMode="decimal"
+              required
               className={FIELD}
             />
+          </Field>
+
+          <Field name="loan_purpose" label="Loan purpose" errors={errors}>
+            <input id="loan_purpose" name="loan_purpose" className={FIELD} />
           </Field>
         </div>
 
@@ -163,7 +159,6 @@ export function NewCaseForm() {
           <Field
             name="employment_type"
             label="How the client is paid"
-            hint="Leave blank and the client picks this themselves in the portal."
             errors={errors}
           >
             <select id="employment_type" name="employment_type" defaultValue="" className={FIELD}>
@@ -195,7 +190,6 @@ export function NewCaseForm() {
           <Field
             name="applicant_1_mobile"
             label="Mobile number"
-            hint="UK mobile. Chasers go out by text as well as email."
             errors={errors}
           >
             <input
@@ -217,13 +211,7 @@ export function NewCaseForm() {
               onChange={(event) => setIsJoint(event.target.checked)}
               className="mt-0.5 h-4 w-4 rounded border-slate-300"
             />
-            <span className="text-sm text-slate-700">
-              Joint application
-              <span className="mt-0.5 block text-xs text-slate-500">
-                The second applicant&rsquo;s items are added straight away, so the client sees
-                everything needed for both from the start.
-              </span>
-            </span>
+            <span className="text-sm text-slate-700">Joint application</span>
           </label>
 
           {isJoint && (
@@ -232,32 +220,6 @@ export function NewCaseForm() {
 
               <NameFields prefix="applicant_2" errors={errors} />
 
-              <div className="grid gap-5 sm:grid-cols-2">
-                <Field name="applicant_2_email" label="Email address" errors={errors}>
-                  <input
-                    id="applicant_2_email"
-                    name="applicant_2_email"
-                    type="email"
-                    required
-                    className={FIELD}
-                  />
-                </Field>
-
-                <Field
-                  name="applicant_2_mobile"
-                  label="Mobile number"
-                  hint="UK mobile"
-                  errors={errors}
-                >
-                  <input
-                    id="applicant_2_mobile"
-                    name="applicant_2_mobile"
-                    type="tel"
-                    required
-                    className={FIELD}
-                  />
-                </Field>
-              </div>
             </div>
           )}
         </div>

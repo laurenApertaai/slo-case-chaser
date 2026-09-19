@@ -16,6 +16,7 @@ export type CaseSummary = {
   case_ref: string
   lender: string | null
   loan_amount: number | null
+  loan_purpose: string | null
   is_joint: boolean
   status: CaseStatus
   applicant_1_name: string
@@ -50,7 +51,7 @@ export type CaseDetail = CaseSummary & {
 }
 
 const CASE_FIELDS =
-  'id, case_ref, lender, loan_amount, is_joint, status, applicant_1_name, adviser_id, pack_issued_at, created_at'
+  'id, case_ref, lender, loan_amount, loan_purpose, is_joint, status, applicant_1_name, adviser_id, pack_issued_at, created_at'
 
 const DETAIL_FIELDS = `${CASE_FIELDS}, applicant_1_email, applicant_1_mobile, applicant_2_name, applicant_2_email, applicant_2_mobile, portal_token, token_expires_at`
 

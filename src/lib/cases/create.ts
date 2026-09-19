@@ -42,6 +42,8 @@ export type CreateCaseInput = {
   loanAmount: number | null
   /** the part of the loan that is for home improvements, where it differs */
   homeImprovementAmount: number | null
+  /** what the loan is for, in the adviser's own words, e.g. "Consol & HI" */
+  loanPurpose: string | null
   isJoint: boolean
   /** the full name, middle name included, as it reads on the application */
   applicant1Name: string
@@ -56,8 +58,8 @@ export type CreateCaseInput = {
   applicant2Name: string | null
   applicant2Parts?: NameParts | null
   /**
-   * The second applicant's email and mobile. The adviser enters both when the
-   * case is created, so the client is never asked for them.
+   * The second applicant's email and mobile, where known. Usually they are not
+   * when the case is created, and the client supplies them from the list.
    */
   applicant2Email: string | null
   applicant2Mobile: string | null
@@ -70,6 +72,7 @@ export type NewCaseRow = {
   lender: string | null
   loan_amount: number | null
   home_improvement_amount: number | null
+  loan_purpose: string | null
   status: 'active'
   is_joint: boolean
   employment_type: EmploymentType | null
@@ -300,6 +303,7 @@ export function buildCaseRow(input: CreateCaseInput, now: Date = new Date()): Ne
     lender: input.lender?.trim() || null,
     loan_amount: input.loanAmount,
     home_improvement_amount: input.homeImprovementAmount,
+    loan_purpose: input.loanPurpose?.trim() || null,
     status: 'active',
     is_joint: input.isJoint,
     employment_type: input.employmentType,
@@ -317,7 +321,7 @@ export function buildCaseRow(input: CreateCaseInput, now: Date = new Date()): Ne
     applicant_2_middle_name: input.isJoint ? input.applicant2Parts?.middle ?? null : null,
     applicant_2_surname: input.isJoint ? input.applicant2Parts?.surname ?? null : null,
 
-    // Their email and mobile are entered by the adviser alongside the name.
+    // Their email and mobile, where known.
     applicant_2_email: input.isJoint ? input.applicant2Email?.trim().toLowerCase() || null : null,
     applicant_2_mobile: input.isJoint ? input.applicant2Mobile?.trim() || null : null,
 
