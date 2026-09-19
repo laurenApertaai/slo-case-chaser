@@ -136,6 +136,16 @@ export function parseCaseForm(
   const isJoint = read('is_joint') !== ''
   const name2 = isJoint ? readName(read, 'applicant_2', errors, 'second applicant') : null
 
+  // The second applicant's email and mobile are optional. Usually nobody knows
+  // them when the case is created and the client supplies them from the list,
+  // but the adviser can add them to the case later. Checked only if given.
+  const email2 = isJoint ? read('applicant_2_email').toLowerCase() : ''
+  if (email2 && !isEmail(email2)) errors.applicant_2_email = 'That does not look like an email address.'
+
+  const rawMobile2 = isJoint ? read('applicant_2_mobile') : ''
+  const mobile2 = rawMobile2 ? normaliseMobile(rawMobile2) : null
+  if (rawMobile2 && !mobile2) errors.applicant_2_mobile = 'That does not look like a UK mobile number.'
+
   if (Object.keys(errors).length > 0) return { ok: false, errors }
 
   const employment = read('employment_type') as EmploymentType
@@ -159,10 +169,8 @@ export function parseCaseForm(
       // and unticking it again must not be stored.
       applicant2Name: name2 ? fullName(name2) : null,
       applicant2Parts: name2,
-      // Not known when the case is created. The client supplies them from the
-      // list, and the adviser can add them to the case later.
-      applicant2Email: null,
-      applicant2Mobile: null,
+      applicant2Email: email2 || null,
+      applicant2Mobile: mobile2,
       employmentType: EMPLOYMENT_TYPES.includes(employment) ? employment : null,
     },
   }

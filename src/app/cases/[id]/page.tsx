@@ -7,6 +7,7 @@ import { StatusBadge } from '../status-badge'
 import { PortalLink } from '../portal-link'
 import { AddItem } from './add-item'
 import { SettleItem } from './settle-item'
+import { RewordItem } from './reword-item'
 import { canSettle } from '@/lib/cases/settle'
 
 export const metadata = { title: 'Case' }
@@ -52,11 +53,18 @@ async function portalUrl(token: string): Promise<string> {
   return `${protocol}://${host}/portal/${token}`
 }
 
-export default async function CasePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CasePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ saved?: string }>
+}) {
   const adviser = await currentAdviser()
   if (!adviser) redirect('/login?error=1')
 
   const { id } = await params
+  const { saved } = await searchParams
   const record = await loadCase(id)
   if (!record) notFound()
 
@@ -85,8 +93,22 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
               {record.adviser_name ?? 'unassigned'}
             </p>
           </div>
-          <StatusBadge colour={record.progress.colour} label={record.progress.label} />
+          <div className="flex items-center gap-3">
+            <StatusBadge colour={record.progress.colour} label={record.progress.label} />
+            <Link
+              href={`/cases/${record.id}/edit`}
+              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Edit case details
+            </Link>
+          </div>
         </header>
+
+        {saved && (
+          <p role="status" className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+            Changes saved. The client list has been updated to match.
+          </p>
+        )}
 
         {record.progress.reasons.length > 0 && (
           <ul className="mt-4 space-y-1 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -192,6 +214,12 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
                       ` · came in by ${item.received_via.replace('_', ' ')}`}
                   </p>
 
+                  <RewordItem
+                    caseId={record.id}
+                    requirementId={item.id}
+                    label={item.label}
+                    description={item.description}
+                  />
                   {canSettle(item.status) && (
                     <SettleItem caseId={record.id} requirementId={item.id} label={item.label} />
                   )}

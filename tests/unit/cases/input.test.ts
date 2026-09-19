@@ -166,6 +166,31 @@ describe('parseCaseForm', () => {
     expect(result.input.applicant2Parts).toBeNull()
   })
 
+  it('takes the second applicant email and mobile when the adviser has them', () => {
+    const result = parse({ applicant_2_email: 'John@Hotmail.com', applicant_2_mobile: '07700 900456' })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.input.applicant2Email).toBe('john@hotmail.com')
+    expect(result.input.applicant2Mobile).toBe('+447700900456')
+  })
+
+  it('catches a second applicant mobile that cannot receive a text', () => {
+    const result = parse({ applicant_2_mobile: '01412211234' })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.applicant_2_mobile).toBeTruthy()
+  })
+
+  it('ignores second applicant contact details on a sole case', () => {
+    const result = parse({ is_joint: '', applicant_2_email: 'rubbish', applicant_2_mobile: 'rubbish' })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.input.applicant2Email).toBeNull()
+  })
+
   it('does not ask the adviser for the second applicant email and mobile', () => {
     // At this stage nobody knows them. They go on the client list instead.
     const result = parse({})

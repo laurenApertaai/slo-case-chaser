@@ -7,7 +7,14 @@ import { parseCaseForm, type FieldErrors } from '@/lib/cases/input'
 
 export type NewCaseState =
   | { status: 'idle' }
-  | { status: 'error'; errors: FieldErrors; message?: string }
+  | {
+      status: 'error'
+      errors: FieldErrors
+      message?: string
+      /** what was typed, so the form can show it again */
+      values: Record<string, string>
+      attempt: number
+    }
   | { status: 'created'; caseId: string; caseRef: string; portalUrl: string; itemCount: number }
 
 async function absoluteUrl(path: string): Promise<string> {
@@ -25,15 +32,22 @@ export async function createCaseAction(
   // so who is asking is established here rather than trusted from the page.
   const adviser = await currentAdviser()
   if (!adviser) {
-    return { status: 'error', errors: {}, message: 'Your session has expired. Please sign in again.' }
+    return {
+      status: 'error',
+      errors: {},
+      message: 'Your session has expired. Please sign in again.',
+      values: {},
+      attempt: Date.now(),
+    }
   }
 
   const fields = Object.fromEntries(
     [...formData.entries()].map(([key, value]) => [key, String(value)]),
   )
+  const keep = { values: fields, attempt: Date.now() }
 
   const parsed = parseCaseForm(fields, adviser.id)
-  if (!parsed.ok) return { status: 'error', errors: parsed.errors }
+  if (!parsed.ok) return { status: 'error', errors: parsed.errors, ...keep }
 
   try {
     const created = await createCase(parsed.input)
@@ -52,9 +66,18 @@ export async function createCaseAction(
     // A duplicate reference is the one failure worth naming, because it is the
     // adviser's to fix. Everything else is ours.
     if (message.includes('duplicate key')) {
-      return { status: 'error', errors: { case_ref: 'A case with that reference already exists.' } }
+      return {
+        status: 'error',
+        errors: { case_ref: 'A case with that reference already exists.' },
+        ...keep,
+      }
     }
 
-    return { status: 'error', errors: {}, message: `The case could not be created: ${message}` }
+    return {
+      status: 'error',
+      errors: {},
+      message: `The case could not be created: ${message}`,
+      ...keep,
+    }
   }
 }

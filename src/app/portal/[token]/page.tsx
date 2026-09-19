@@ -68,7 +68,7 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
           </p>
           {view.isJoint && !view.allDone && (
             <p className="mt-2 text-sm text-slate-500">
-              This list covers both applicants. Either of you can send anything on it.
+              This list covers both applicants. Either of you can add details/documents.
             </p>
           )}
         </div>

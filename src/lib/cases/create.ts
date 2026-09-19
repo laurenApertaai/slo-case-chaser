@@ -242,6 +242,9 @@ const SORT_STEP = 10
 /** The item that asks the client to break down the home improvements. */
 const LOAN_PURPOSE = 'home_improvements'
 
+/** The item that asks the client for the second applicant's email and mobile. */
+const APPLICANT_2_CONTACT = 'applicant_2_contact'
+
 function slotsFor(item: TemplateItem, input: CreateCaseInput): ApplicantSlot[] {
   const isJoint = input.isJoint
   if (item.jointOnly && !isJoint) return []
@@ -249,6 +252,10 @@ function slotsFor(item: TemplateItem, input: CreateCaseInput): ApplicantSlot[] {
   // The Loan Purpose question asks for a breakdown of the home improvements.
   // With no HI on the case it makes no sense to the client, so it is left off.
   if (item.key === LOAN_PURPOSE && !((input.homeImprovementAmount ?? 0) > 0)) return []
+
+  // Never ask the client for the second applicant's email and mobile once the
+  // adviser has added both to the case.
+  if (item.key === APPLICANT_2_CONTACT && input.applicant2Email && input.applicant2Mobile) return []
 
   if (item.perApplicant) return isJoint ? ['applicant_1', 'applicant_2'] : ['joint']
   return [item.applicantSlot ?? 'joint']
