@@ -267,7 +267,12 @@ describe('three year work history', () => {
   it('asks the self employed the same way when they have not been trading three years', () => {
     const result = validate(
       'employment_details',
-      { employment_status: 'self_employed', trading_style: 'sole_trader', years_self_employed: '1' },
+      {
+        employment_status: 'self_employed',
+        trading_style: 'sole_trader',
+        nature_of_business: 'Joinery',
+        years_self_employed: '1',
+      },
       NOW,
     )
 
@@ -279,11 +284,36 @@ describe('three year work history', () => {
   it('leaves the self employed alone once they are past three years', () => {
     const result = validate(
       'employment_details',
-      { employment_status: 'self_employed', trading_style: 'sole_trader', years_self_employed: '5' },
+      {
+        employment_status: 'self_employed',
+        trading_style: 'sole_trader',
+        nature_of_business: 'Joinery',
+        years_self_employed: '5',
+      },
       NOW,
     )
 
     expect(result.ok).toBe(true)
+  })
+
+  it('asks the self employed what their business actually is', () => {
+    const result = validate(
+      'employment_details',
+      { employment_status: 'self_employed', trading_style: 'sole_trader', years_self_employed: '5' },
+      NOW,
+    )
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.nature_of_business).toBeTruthy()
+  })
+
+  it('does not ask an employed client the nature of their business', () => {
+    const result = employed({ joined_date: '2020-01-01' })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.values.nature_of_business).toBe('')
   })
 
   it('does not ask an employed client for years of self employment', () => {

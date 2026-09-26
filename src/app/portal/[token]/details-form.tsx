@@ -19,7 +19,6 @@ const WRONG = 'border-red-500 bg-red-50'
  */
 export function DetailsForm({
   sent = false,
-  note = null,
   token,
   requirementId,
   fields,
@@ -27,8 +26,6 @@ export function DetailsForm({
 }: {
   /** true once an answer has already been sent, so the button offers a change */
   sent?: boolean
-  /** a line shown above the boxes, before anything is filled in */
-  note?: string | null
   token: string
   requirementId: string
   fields: FormField[]
@@ -96,11 +93,6 @@ export function DetailsForm({
 
   return (
     <form onSubmit={submit} className="mt-4 space-y-4" noValidate>
-      {note && (
-        <p className="rounded-lg bg-brand-tint px-3 py-2.5 text-sm font-medium text-slate-900">
-          {note}
-        </p>
-      )}
       {fields.filter(shown).map((field) => {
         const id = `${requirementId}-${field.key}`
         const error = errors[field.key]

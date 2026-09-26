@@ -142,6 +142,14 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
                 <p className="mt-1.5 text-sm text-slate-600">{item.description}</p>
               )}
 
+              {/* Shown on the card, not tucked inside the boxes, so it is read
+                  before anybody starts filling anything in. */}
+              {noteFor(item.templateKey) && (
+                <p className="mt-2 rounded-lg bg-brand-tint px-3 py-2.5 text-sm font-medium text-slate-900">
+                  {noteFor(item.templateKey)}
+                </p>
+              )}
+
               {item.expectedCount !== null && item.state === 'outstanding' && (
                 <p className="mt-2 text-sm text-slate-500">
                   {item.uploadedCount} of {item.expectedCount} sent so far
@@ -189,7 +197,6 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
                   fields={formFor(item.templateKey)!}
                   initial={item.values}
                   sent={sent(item)}
-                  note={noteFor(item.templateKey)}
                 />
               )}
             </li>

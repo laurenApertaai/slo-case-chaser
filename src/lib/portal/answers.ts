@@ -172,6 +172,7 @@ const FORMS: Record<string, FormField[]> = {
       kind: 'text',
       showWhen: { key: 'trading_style', value: 'limited' },
     },
+    { key: 'nature_of_business', label: 'Nature of business/work', kind: 'text', showWhen: SELF_EMPLOYED },
     { key: 'years_self_employed', label: 'Years in self employment', kind: 'number', showWhen: SELF_EMPLOYED },
 
     // The three year work history. A job that started less than three years

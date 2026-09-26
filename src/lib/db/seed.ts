@@ -178,6 +178,7 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
       { key: 'joined_date', label: 'Date you joined the company' },
       { key: 'trading_style', label: 'Sole trader or limited company' },
       { key: 'company_name', label: 'Company name, if limited' },
+      { key: 'nature_of_business', label: 'Nature of business/work' },
       { key: 'years_self_employed', label: 'Years in self employment' },
       // Three years of history. Only as many previous jobs as it takes to
       // reach back that far are ever asked for.
