@@ -11,6 +11,18 @@
  * with the wrong key, fails loudly rather than returning rubbish.
  *
  * Server side only. The key is BANK_DETAILS_KEY, 32 random bytes, base64.
+ *
+ * **Losing the key loses the data.** There is no reset and no recovery, so two
+ * things guard against it:
+ *
+ * 1. The key is escrowed outside this machine. A laptop failing must not take
+ *    client bank details with it.
+ * 2. `BANK_DETAILS_KEY_PREVIOUS` may hold older keys, comma separated. Anything
+ *    sealed under one of them still opens, so the key can be replaced without
+ *    stranding what is already stored, and a key restored from the wrong backup
+ *    is a warning rather than a disaster.
+ *
+ * New details are always sealed with the current key.
  */
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
 
@@ -36,6 +48,19 @@ export function bankKey(): string {
   return key
 }
 
+/**
+ * Every key that may have sealed something: the current one first, then any
+ * retired ones. Order matters only for speed - the right one is found either way.
+ */
+export function allBankKeys(): string[] {
+  const previous = (process.env.BANK_DETAILS_KEY_PREVIOUS ?? '')
+    .split(',')
+    .map((k) => k.trim())
+    .filter(Boolean)
+
+  return [bankKey(), ...previous]
+}
+
 /** Sealed layout: 12 byte nonce, 16 byte tag, then the ciphertext. */
 export function encryptBankDetails(details: BankDetails, key: string = bankKey()): Buffer {
   const iv = randomBytes(IV_BYTES)
@@ -44,7 +69,7 @@ export function encryptBankDetails(details: BankDetails, key: string = bankKey()
   return Buffer.concat([iv, cipher.getAuthTag(), body])
 }
 
-export function decryptBankDetails(sealed: Buffer, key: string = bankKey()): BankDetails {
+function openWith(sealed: Buffer, key: string): BankDetails {
   const iv = sealed.subarray(0, IV_BYTES)
   const tag = sealed.subarray(IV_BYTES, IV_BYTES + TAG_BYTES)
   const body = sealed.subarray(IV_BYTES + TAG_BYTES)
@@ -53,6 +78,29 @@ export function decryptBankDetails(sealed: Buffer, key: string = bankKey()): Ban
   decipher.setAuthTag(tag)
   const plain = Buffer.concat([decipher.update(body), decipher.final()])
   return JSON.parse(plain.toString('utf8')) as BankDetails
+}
+
+/**
+ * Opens a sealed bundle with the current key, or any retired key that still
+ * works. GCM means a wrong key fails rather than returning rubbish, so trying
+ * each one in turn is safe.
+ */
+export function decryptBankDetails(sealed: Buffer, keys: string | string[] = allBankKeys()): BankDetails {
+  const candidates = typeof keys === 'string' ? [keys] : keys
+  if (candidates.length === 0) throw new Error('No bank details key is available')
+
+  for (const key of candidates) {
+    try {
+      return openWith(sealed, key)
+    } catch {
+      // Wrong key. Try the next one.
+    }
+  }
+
+  throw new Error(
+    'These bank details cannot be opened with any key this machine has. ' +
+      'Check BANK_DETAILS_KEY against the escrow copy before doing anything else.',
+  )
 }
 
 /** How a `bytea` column is written through the database API. */
