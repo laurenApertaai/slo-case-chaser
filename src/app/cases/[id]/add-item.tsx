@@ -60,7 +60,8 @@ export function AddItem({ caseId, isJoint }: { caseId: string; isJoint: boolean 
             onChange={(event) => setLabel(event.target.value)}
             className={FIELD}
           >
-            <option value="">Choose one, or type your own below</option>
+            {/* Clears the box, ready for something the list does not cover. */}
+            <option value="">Type manually</option>
             {COMMON_EXTRA_ITEMS.map((item) => (
               <option key={item.key} value={item.label}>
                 {item.label}
