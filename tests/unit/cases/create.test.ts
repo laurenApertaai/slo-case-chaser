@@ -130,7 +130,7 @@ describe('buildRequirements', () => {
     const rows = buildRequirements(DEFAULT_TEMPLATE, jointInput)
     const contact = rows.find((r) => r.template_key === 'applicant_2_contact')
 
-    expect(contact?.label).toBe('Contact details for the second applicant')
+    expect(contact?.label).toBe('Contact details for Sarah Walker')
     expect(contact?.applicant).toBe('applicant_2')
     expect(contact?.description).toBe(
       'We require the email address and mobile number for Sarah Walker for the application.',

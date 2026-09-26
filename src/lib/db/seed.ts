@@ -145,7 +145,7 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
   {
     key: 'applicant_2_contact',
     type: 'question',
-    label: 'Contact details for the second applicant',
+    label: 'Contact details for {{applicant_2_name}}',
     description:
       'We require the email address and mobile number for {{applicant_2_name}} for the application.',
     perApplicant: false,

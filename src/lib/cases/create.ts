@@ -294,7 +294,7 @@ export function buildRequirements(
       rows.push({
         applicant,
         type: item.type,
-        label: labelFor(base, applicant, input, item.perApplicant),
+        label: labelFor(fillTokens(base, input), applicant, input, item.perApplicant),
         description: fillTokens(description, input),
         status: 'outstanding',
         is_mandatory: item.isMandatory,
