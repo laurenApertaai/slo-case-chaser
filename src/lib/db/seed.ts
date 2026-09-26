@@ -164,8 +164,10 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
     key: 'employment_details',
     type: 'question',
     label: 'Your employment details',
-    description:
-      'If you are employed, we require your job title, the name of the company you work for, and the date you joined. If you are self employed, we need to know whether you are a sole trader or a limited company, the company name if it is limited, and how many years you have been self employed.',
+    // No description on purpose. The boxes ask each question by name, so a
+    // paragraph above them repeating the same thing only makes the item look
+    // heavy. The three year note above the boxes is the only line needed.
+    description: '',
     perApplicant: true,
     jointOnly: false,
     isMandatory: true,
