@@ -108,7 +108,7 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
     perApplicant: true,
     jointOnly: false,
     isMandatory: true,
-    sortOrder: 2,
+    sortOrder: 5,
   },
   {
     key: 'income_evidence',
@@ -130,7 +130,7 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
     perApplicant: false,
     jointOnly: false,
     isMandatory: true,
-    sortOrder: 4,
+    sortOrder: 6,
     fields: [
       { key: 'has_dependants', label: 'Do you have any dependents?' },
       { key: 'dependant_count', label: 'How many dependents do you have?' },
@@ -152,7 +152,7 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
     jointOnly: true,
     applicantSlot: 'applicant_2',
     isMandatory: true,
-    sortOrder: 5,
+    sortOrder: 2,
     fields: [
       // The name is captured when the case is created. The adviser does not
       // usually know these two at that stage, so the client supplies them.
@@ -171,7 +171,7 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
     perApplicant: true,
     jointOnly: false,
     isMandatory: true,
-    sortOrder: 6,
+    sortOrder: 4,
     fields: [
       { key: 'job_title', label: 'Job title' },
       { key: 'employer_name', label: 'Name of the company you work for' },
