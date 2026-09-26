@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { addExtraItemAction, type ExtraItemState } from './actions'
+import { COMMON_EXTRA_ITEMS } from '@/lib/db/seed'
 
 const FIELD =
   'mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none'
@@ -9,6 +10,10 @@ const LABEL = 'block text-sm font-medium text-slate-700'
 
 export function AddItem({ caseId, isJoint }: { caseId: string; isJoint: boolean }) {
   const [open, setOpen] = useState(false)
+
+  // The wording lives in state so that picking a common item fills the boxes
+  // and the adviser can then change every word of it before adding.
+  const [label, setLabel] = useState('')
   const [state, formAction, pending] = useActionState<ExtraItemState, FormData>(
     addExtraItemAction,
     { status: 'idle' },
@@ -46,10 +51,37 @@ export function AddItem({ caseId, isJoint }: { caseId: string; isJoint: boolean 
 
       <fieldset disabled={pending} className="space-y-4">
         <div>
+          <label htmlFor="common" className={LABEL}>
+            Pick a common one
+          </label>
+          <select
+            id="common"
+            value=""
+            onChange={(event) => setLabel(event.target.value)}
+            className={FIELD}
+          >
+            <option value="">Choose one, or type your own below</option>
+            {COMMON_EXTRA_ITEMS.map((item) => (
+              <option key={item.key} value={item.label}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
           <label htmlFor="label" className={LABEL}>
             What do you need?
           </label>
-          <input id="label" name="label" required className={FIELD} placeholder="Proof of address" />
+          <input
+            id="label"
+            name="label"
+            required
+            className={FIELD}
+            placeholder="Proof of address"
+            value={label}
+            onChange={(event) => setLabel(event.target.value)}
+          />
           {errors.label && (
             <p role="alert" className="mt-1 text-xs text-red-700">
               {errors.label}

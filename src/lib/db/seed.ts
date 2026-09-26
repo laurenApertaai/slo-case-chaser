@@ -234,6 +234,23 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
 ]
 
 // ---------------------------------------------------------------------------
+// Common extra items
+//
+// The things advisers ask for over and over that are not in the standard pack.
+// Picking one fills the wording in; the adviser can then change every word of
+// it before adding, because no two cases word a request quite the same.
+//
+// Lori's wording, verbatim. Add to this list as patterns emerge.
+// ---------------------------------------------------------------------------
+
+export const COMMON_EXTRA_ITEMS = [
+  { key: 'child_benefit', label: '3 months filtered bank statements showing child benefit ONLY' },
+  { key: 'benefits', label: '3 month filtered bank statements showing benefits ONLY' },
+  { key: 'council_tax', label: 'Council tax/utility bill dated within last 3 months' },
+  { key: 'marriage_certificate', label: 'Marriage certificate' },
+] as const
+
+// ---------------------------------------------------------------------------
 // Rejection reasons
 // ---------------------------------------------------------------------------
 
