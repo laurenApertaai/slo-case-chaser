@@ -110,23 +110,96 @@ describe('household bills', () => {
 })
 
 describe('dependents', () => {
-  it('accepts no', () => {
-    expect(validate('dependants', { has_dependants: 'no' })).toEqual({
-      ok: true,
-      values: { has_dependants: 'no', ages: '' },
-    })
+  it('asks nothing else when the answer is no', () => {
+    const result = validate('dependants', { has_dependants: 'no' })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.values.has_dependants).toBe('no')
+    expect(result.values.dependant_count).toBe('')
+    expect(result.values.dependant_1_age).toBe('')
   })
 
-  it('accepts yes with ages', () => {
-    const result = validate('dependants', { has_dependants: 'yes', ages: '4 and 7' })
-    expect(result.ok && result.values).toEqual({ has_dependants: 'yes', ages: '4 and 7' })
-  })
+  it('asks how many once the answer is yes', () => {
+    const result = validate('dependants', { has_dependants: 'yes' })
 
-  it('asks for the ages when the answer is yes', () => {
-    const result = validate('dependants', { has_dependants: 'yes', ages: '' })
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.errors.ages).toBeTruthy()
+    expect(result.errors.dependant_count).toBeTruthy()
+  })
+
+  it('asks for exactly as many ages as there are dependents', () => {
+    const result = validate('dependants', { has_dependants: 'yes', dependant_count: '3' })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(Object.keys(result.errors).sort()).toEqual([
+      'dependant_1_age',
+      'dependant_2_age',
+      'dependant_3_age',
+    ])
+  })
+
+  it('accepts three dependents with three ages', () => {
+    const result = validate('dependants', {
+      has_dependants: 'yes',
+      dependant_count: '3',
+      dependant_1_age: '7',
+      dependant_2_age: '4',
+      dependant_3_age: '0',
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.values.dependant_3_age).toBe('0')
+    // The fourth box was never shown, so nothing is stored against it.
+    expect(result.values.dependant_4_age).toBe('')
+  })
+
+  it('goes up to ten', () => {
+    const raw: Record<string, string> = { has_dependants: 'yes', dependant_count: '10' }
+    for (let i = 1; i <= 10; i += 1) raw[`dependant_${i}_age`] = String(i)
+
+    const result = validate('dependants', raw)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.values.dependant_10_age).toBe('10')
+  })
+
+  it('refuses a count that is not on the list', () => {
+    const result = validate('dependants', { has_dependants: 'yes', dependant_count: '14' })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.dependant_count).toBeTruthy()
+  })
+
+  it('refuses an age that is not a number', () => {
+    const result = validate('dependants', {
+      has_dependants: 'yes',
+      dependant_count: '1',
+      dependant_1_age: 'nearly four',
+    })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.dependant_1_age).toBeTruthy()
+  })
+
+  it('throws away ages from a count that was cut back', () => {
+    // Answered three, then changed to one. The other two must not be kept.
+    const result = validate('dependants', {
+      has_dependants: 'yes',
+      dependant_count: '1',
+      dependant_1_age: '7',
+      dependant_2_age: '4',
+      dependant_3_age: '2',
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.values.dependant_2_age).toBe('')
+    expect(result.values.dependant_3_age).toBe('')
   })
 
   it('insists on a yes or a no', () => {

@@ -133,7 +133,13 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
     sortOrder: 4,
     fields: [
       { key: 'has_dependants', label: 'Do you have any dependents?' },
-      { key: 'ages', label: 'Their ages' },
+      { key: 'dependant_count', label: 'How many dependents do you have?' },
+      // One age per dependent, asked one box at a time rather than as a
+      // sentence, so the ages land as data instead of as prose.
+      ...Array.from({ length: 10 }, (_, i) => ({
+        key: `dependant_${i + 1}_age`,
+        label: `Dependent ${i + 1} age`,
+      })),
     ],
   },
   {

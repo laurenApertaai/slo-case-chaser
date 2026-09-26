@@ -21,14 +21,24 @@ export type FieldKind =
   | 'sortcode'
   | 'account'
   | 'choice'
+  /** the same as a choice, but shown as a dropdown where there are too many
+      options to sit as buttons on a phone */
+  | 'select'
 
 export type FormField = {
   key: string
   label: string
   kind: FieldKind
   options?: { value: string; label: string }[]
-  /** only shown, and only checked, when another answer has this value */
-  showWhen?: { key: string; value: string }
+  /**
+   * Only shown, and only checked, when another answer says so: either it
+   * matches `value`, or it is a number at least as big as `atLeast`.
+   *
+   * `atLeast` is what lets one dependent age box appear per dependent. Picking
+   * 3 shows boxes 1, 2 and 3, and picking 1 again empties the other two rather
+   * than leaving stale ages behind.
+   */
+  showWhen?: { key: string; value?: string; atLeast?: number }
 }
 
 export type AnswerResult =
@@ -39,6 +49,9 @@ function labelOf(itemKey: string, fieldKey: string): string {
   const item = DEFAULT_TEMPLATE.find((i) => i.key === itemKey)
   return item?.fields?.find((f) => f.key === fieldKey)?.label ?? fieldKey
 }
+
+/** As many dependents as anybody is going to be asked to list one by one. */
+export const MAX_DEPENDANTS = 10
 
 const EMPLOYED = { key: 'employment_status', value: 'employed' }
 const SELF_EMPLOYED = { key: 'employment_status', value: 'self_employed' }
@@ -55,11 +68,22 @@ const FORMS: Record<string, FormField[]> = {
       ],
     },
     {
-      key: 'ages',
-      label: labelOf('dependants', 'ages'),
-      kind: 'text',
+      key: 'dependant_count',
+      label: 'How many dependents do you have?',
+      kind: 'select',
+      options: Array.from({ length: MAX_DEPENDANTS }, (_, i) => ({
+        value: String(i + 1),
+        label: String(i + 1),
+      })),
       showWhen: { key: 'has_dependants', value: 'yes' },
     },
+    // One age box per dependent, appearing as soon as the count reaches it.
+    ...Array.from({ length: MAX_DEPENDANTS }, (_, i) => ({
+      key: `dependant_${i + 1}_age`,
+      label: `Dependent ${i + 1} age`,
+      kind: 'number' as const,
+      showWhen: { key: 'dependant_count', atLeast: i + 1 },
+    })),
   ],
 
   applicant_2_contact: [
@@ -129,7 +153,15 @@ function applies(field: FormField, raw: Record<string, string>): boolean {
   const parent = FORMS_BY_KEY.get(field.showWhen.key)
   // A field whose parent is itself hidden is hidden too.
   if (parent && !applies(parent, raw)) return false
-  return (raw[field.showWhen.key] ?? '').trim() === field.showWhen.value
+
+  const answer = (raw[field.showWhen.key] ?? '').trim()
+
+  if (field.showWhen.atLeast !== undefined) {
+    const n = Number(answer)
+    return Number.isFinite(n) && n >= field.showWhen.atLeast
+  }
+
+  return answer === field.showWhen.value
 }
 
 const FORMS_BY_KEY = new Map(Object.values(FORMS).flat().map((f) => [f.key, f]))
@@ -172,7 +204,8 @@ function check(field: FormField, value: string, today: string): { value: string 
       const n = Number(value)
       return Number.isFinite(n) && n >= 0 ? { value: String(n) } : { error: 'Please enter a number.' }
     }
-    case 'choice': {
+    case 'choice':
+    case 'select': {
       return field.options?.some((o) => o.value === value)
         ? { value }
         : { error: 'Please choose one.' }

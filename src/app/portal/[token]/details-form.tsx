@@ -41,7 +41,16 @@ export function DetailsForm({
     if (!field.showWhen) return true
     const parent = fields.find((f) => f.key === field.showWhen!.key)
     if (parent && !shown(parent)) return false
-    return values[field.showWhen.key] === field.showWhen.value
+
+    const answer = values[field.showWhen.key] ?? ''
+
+    // "at least this many" is how one age box appears per dependent.
+    if (field.showWhen.atLeast !== undefined) {
+      const n = Number(answer)
+      return Number.isFinite(n) && answer !== '' && n >= field.showWhen.atLeast
+    }
+
+    return answer === field.showWhen.value
   }
 
   async function submit(event: React.FormEvent) {
@@ -92,7 +101,28 @@ export function DetailsForm({
 
         return (
           <div key={field.key}>
-            {field.kind === 'choice' ? (
+            {field.kind === 'select' ? (
+              <>
+                <label htmlFor={id} className="block text-sm font-medium text-slate-700">
+                  {field.label}
+                </label>
+                <select
+                  id={id}
+                  value={values[field.key] ?? ''}
+                  onChange={(event) => set(field.key, event.target.value)}
+                  className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                >
+                  <option value="" disabled>
+                    Please choose
+                  </option>
+                  {field.options!.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </>
+            ) : field.kind === 'choice' ? (
               <fieldset>
                 <legend className="text-sm font-medium text-slate-700">{field.label}</legend>
                 <div className="mt-2 flex flex-wrap gap-2">
