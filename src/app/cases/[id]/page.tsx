@@ -11,6 +11,8 @@ import { RewordItem } from './reword-item'
 import { Received } from './received'
 import { formFor } from '@/lib/portal/answers'
 import { canSettle } from '@/lib/cases/settle'
+import { AttachForm } from './attach-form'
+import { formFolder, listFolder } from '@/lib/files/storage'
 
 export const metadata = { title: 'Case' }
 
@@ -71,6 +73,16 @@ export default async function CasePage({
   if (!record) notFound()
 
   const link = await portalUrl(record.portal_token)
+
+  // The forms the adviser has attached, one folder per item.
+  const attachedForms: Record<string, { name: string; size: number }[]> = {}
+  await Promise.all(
+    record.requirements
+      .filter((r) => r.type === 'upload' && r.template_key !== 'slo_documents')
+      .map(async (r) => {
+        attachedForms[r.id] = await listFolder(formFolder(record.id, r.id))
+      }),
+  )
 
   return (
     <main className="min-h-screen bg-slate-50 p-8">
@@ -224,6 +236,16 @@ export default async function CasePage({
                     fields={formFor(item.template_key)}
                     bankLast4={record.bank_details_last4}
                   />
+                  {/* Only an item the client sends a document back for can
+                      carry a form to sign. */}
+                  {item.type === 'upload' && item.template_key !== 'slo_documents' && (
+                    <AttachForm
+                      caseId={record.id}
+                      requirementId={item.id}
+                      files={attachedForms[item.id] ?? []}
+                    />
+                  )}
+
                   <RewordItem
                     caseId={record.id}
                     requirementId={item.id}

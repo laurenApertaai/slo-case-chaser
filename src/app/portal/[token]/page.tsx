@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { buildPortalView, openPortal, type PortalItem } from '@/lib/portal/resolve'
 import { formFor, noteFor } from '@/lib/portal/answers'
-import { listSloFiles } from '@/lib/files/storage'
+import { formFolder, listFolder, listSloFiles } from '@/lib/files/storage'
 import { FIRM_NAME } from '@/lib/db/seed'
 import { UploadButton } from './upload-button'
 import { DetailsForm } from './details-form'
@@ -66,6 +66,16 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
 
   const view = buildPortalView(opened.row)
   const sloFiles = await listSloFiles(opened.row.id)
+
+  // Forms the adviser has attached to an item for the client to sign.
+  const attached: Record<string, { name: string; size: number }[]> = {}
+  await Promise.all(
+    opened.row.requirements
+      .filter((r) => r.type === 'upload' && r.template_key !== 'slo_documents')
+      .map(async (r) => {
+        attached[r.id] = await listFolder(formFolder(opened.row.id, r.id))
+      }),
+  )
 
   /**
    * Whether the client can still put something against this item.
@@ -184,6 +194,20 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
                   requirementId={item.id}
                   current={item.employmentType}
                 />
+              )}
+
+              {(attached[item.id] ?? []).length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {attached[item.id].map((file) => (
+                    <a
+                      key={file.name}
+                      href={`/api/portal/${token}/form/${item.id}/${encodeURIComponent(file.name)}`}
+                      className="rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                    >
+                      Download {file.name}
+                    </a>
+                  ))}
+                </div>
               )}
 
               {open(item) && item.type === 'upload' && (
