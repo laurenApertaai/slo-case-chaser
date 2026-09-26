@@ -38,6 +38,8 @@ export type PortalRequirementRow = {
   /** pages across every file, which is what the signed pack is counted in */
   page_count: number
   template_key: string | null
+  /** how this applicant said they are paid, or null if they have not said */
+  employment_type: EmploymentType | null
   /** what the client has already filled in, by box */
   answers: Record<string, string>
 }
@@ -77,6 +79,8 @@ export type PortalItem = {
   uploadedCount: number
   /** which pack item this is, so the page knows which boxes to show */
   templateKey: string | null
+  /** how they said they are paid, so the selector shows their answer back */
+  employmentType: EmploymentType | null
   /** answers already given, to fill the boxes back in; never bank details */
   values: Record<string, string>
 }
@@ -167,6 +171,7 @@ export function buildPortalView(row: PortalCaseRow): PortalView {
             ? requirement.page_count
             : requirement.upload_count,
         templateKey: requirement.template_key,
+        employmentType: requirement.employment_type,
         values: requirement.template_key === NEVER_SHOWN_BACK ? {} : requirement.answers,
       }
     })
@@ -263,7 +268,7 @@ export function supabasePortalStore(): PortalStore {
       const { data: requirements, error: reqError } = await db
         .from('requirements')
         .select(
-          'id, applicant, type, label, description, status, is_mandatory, expected_count, sort_order, template_key, uploads(page_count, deleted_at), answers(field_key, value)',
+          'id, applicant, type, label, description, status, is_mandatory, expected_count, sort_order, template_key, employment_type, uploads(page_count, deleted_at), answers(field_key, value)',
         )
         .eq('case_id', data.id)
         .order('sort_order')

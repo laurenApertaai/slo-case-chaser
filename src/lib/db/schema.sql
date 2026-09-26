@@ -76,6 +76,8 @@ create table requirements (
   -- which template item this came from; null for a one-off item an adviser
   -- added to a live case. See migration 002 for why the label cannot do this.
   template_key      text,
+  -- how this applicant is paid, where the item depends on it; see migration 006
+  employment_type   employment_type,
   label             text not null,
   description       text,
   status            requirement_status not null default 'outstanding',

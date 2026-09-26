@@ -36,6 +36,7 @@ function caseRow(overrides: Partial<PortalCaseRow> = {}): PortalCaseRow {
         upload_count: 1,
         page_count: 1,
         template_key: 'slo_documents',
+        employment_type: null,
         answers: {},
       },
     ],

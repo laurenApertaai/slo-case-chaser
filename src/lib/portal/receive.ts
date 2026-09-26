@@ -13,6 +13,8 @@ import { randomUUID } from 'node:crypto'
 import { serverClient } from '@/lib/db/client'
 import { encryptBankDetails, toBytea, type BankDetails } from '@/lib/crypto/bankDetails'
 import { formFor, validateAnswers } from '@/lib/portal/answers'
+import { planEmploymentChange } from '@/lib/portal/employment'
+import type { EmploymentType } from '@/lib/cases/employment'
 import type { PortalCaseRow, PortalRequirementRow } from '@/lib/portal/resolve'
 import { countPages, isComplete, MAX_FILE_BYTES, putFile, uploadPath } from '@/lib/files/storage'
 
@@ -232,4 +234,71 @@ export async function receiveFiles(
     sentSoFar: byPages ? pagesSoFar : filesSoFar,
     expected: item.expected_count,
   }
+}
+
+// ---------------------------------------------------------------------------
+// How the client is paid
+// ---------------------------------------------------------------------------
+
+const INCOME_EVIDENCE = 'income_evidence'
+
+const EMPLOYMENT_TYPES: EmploymentType[] = [
+  'employed_monthly',
+  'employed_4weekly',
+  'employed_fortnightly',
+  'employed_weekly',
+  'self_employed',
+]
+
+/**
+ * The client saying how they are paid, which retitles their income evidence
+ * item and sets how many files it expects.
+ *
+ * Answered per applicant, not per case: on a joint application one of them can
+ * be employed and the other self employed.
+ */
+export async function receiveEmploymentType(
+  row: PortalCaseRow,
+  requirementId: string,
+  type: string,
+): Promise<ReceiveResult> {
+  const item = findItem(row, requirementId)
+  if (!item) return { ok: false, status: 404, message: 'That is not on your list.' }
+
+  if (item.template_key !== INCOME_EVIDENCE) {
+    return { ok: false, status: 400, message: 'That question does not belong to this item.' }
+  }
+
+  if (isClosed(item)) {
+    return { ok: false, status: 409, message: 'We have already dealt with that one. Thank you.' }
+  }
+
+  if (!EMPLOYMENT_TYPES.includes(type as EmploymentType)) {
+    return { ok: false, status: 400, message: 'Please choose one of the options.' }
+  }
+
+  const patch = planEmploymentChange(
+    {
+      employment_type: item.employment_type,
+      label: item.label,
+      description: item.description,
+      status: item.status,
+      uploadedCount: item.upload_count,
+    },
+    type as EmploymentType,
+  )
+
+  const { error } = await serverClient().from('requirements').update(patch).eq('id', requirementId)
+  if (error) throw error
+
+  await serverClient().from('events').insert({
+    case_id: row.id,
+    requirement_id: requirementId,
+    type: 'employment_type_set',
+    actor: 'client',
+    // The pay frequency, not the person. Nothing identifying goes in the trail.
+    detail: { employment_type: type, applicant: item.applicant },
+  })
+
+  return { ok: true, complete: false, expected: patch.expected_count ?? null }
 }

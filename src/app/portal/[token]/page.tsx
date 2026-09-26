@@ -5,6 +5,7 @@ import { listSloFiles } from '@/lib/files/storage'
 import { FIRM_NAME } from '@/lib/db/seed'
 import { UploadButton } from './upload-button'
 import { DetailsForm } from './details-form'
+import { PayFrequency } from './pay-frequency'
 
 /**
  * The client's page.
@@ -154,6 +155,16 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
                     </a>
                   ))}
                 </div>
+              )}
+
+              {/* Income evidence asks how they are paid before it asks for
+                  anything, because the answer decides what we are asking for. */}
+              {open(item) && item.templateKey === 'income_evidence' && (
+                <PayFrequency
+                  token={token}
+                  requirementId={item.id}
+                  current={item.employmentType}
+                />
               )}
 
               {open(item) && item.type === 'upload' && (
