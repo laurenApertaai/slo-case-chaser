@@ -258,13 +258,16 @@ export default async function CasePage({
                     label={item.label}
                     description={item.description}
                   />
+                </div>
+
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <p className={`text-sm ${REQUIREMENT_STYLES[item.status]}`}>
+                    {REQUIREMENT_WORDS[item.status]}
+                  </p>
                   {canSettle(item.status) && (
                     <SettleItem caseId={record.id} requirementId={item.id} label={item.label} />
                   )}
                 </div>
-                <p className={`shrink-0 text-sm ${REQUIREMENT_STYLES[item.status]}`}>
-                  {REQUIREMENT_WORDS[item.status]}
-                </p>
               </li>
             ))}
           </ul>

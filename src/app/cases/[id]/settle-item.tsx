@@ -27,7 +27,7 @@ export function SettleItem({
 
   if (state.status === 'settled') {
     return (
-      <p className="mt-2 text-xs text-green-700">
+      <p className="text-right text-xs text-green-700">
         {state.outcome === 'accepted' ? 'Marked as received.' : 'Waived.'} It has come off the
         client list.
       </p>
@@ -36,17 +36,17 @@ export function SettleItem({
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="mt-2 text-xs font-medium text-slate-500 underline underline-offset-2 hover:text-slate-800"
-      >
-        Take this off the list
+      <button onClick={() => setOpen(true)} className="btn-quiet px-3 py-1.5 text-xs">
+        Remove from list
       </button>
     )
   }
 
   return (
-    <form action={formAction} className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+    <form
+      action={formAction}
+      className="w-64 rounded-lg border border-slate-200 bg-slate-50 p-3 text-left"
+    >
       <input type="hidden" name="case_id" value={caseId} />
       <input type="hidden" name="requirement_id" value={requirementId} />
 
