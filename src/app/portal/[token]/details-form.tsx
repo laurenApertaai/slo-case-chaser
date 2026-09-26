@@ -18,11 +18,14 @@ const WRONG = 'border-red-500 bg-red-50'
  * server when it is sent. Client-facing, so contractions are spelled out.
  */
 export function DetailsForm({
+  sent = false,
   token,
   requirementId,
   fields,
   initial,
 }: {
+  /** true once an answer has already been sent, so the button offers a change */
+  sent?: boolean
   token: string
   requirementId: string
   fields: FormField[]
@@ -86,9 +89,13 @@ export function DetailsForm({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="btn-brand mt-3 w-full px-6 py-3 text-sm sm:w-auto"
+        className={
+          sent
+            ? 'btn-quiet mt-3 w-full px-6 py-2.5 text-sm sm:w-auto'
+            : 'btn-brand mt-3 w-full px-6 py-3 text-sm sm:w-auto'
+        }
       >
-        Enter details
+        {sent ? 'Change your answer' : 'Enter details'}
       </button>
     )
   }

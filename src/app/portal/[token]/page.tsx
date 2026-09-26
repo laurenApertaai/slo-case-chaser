@@ -67,8 +67,19 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
   const view = buildPortalView(opened.row)
   const sloFiles = await listSloFiles(opened.row.id)
 
-  // Something is only asked for while it is still needed, or has been sent back.
-  const open = (item: PortalItem) => item.state === 'outstanding' || item.state === 'sent_back'
+  /**
+   * Whether the client can still put something against this item.
+   *
+   * Everything stays open until the adviser has accepted it, or it has been
+   * waived. Clients mistype an age or send the wrong photo constantly, and
+   * locking an item the moment it arrives turns a five second correction into a
+   * phone call. Once it is accepted it is the adviser's judgement, and it is
+   * not quietly replaced underneath them.
+   */
+  const open = (item: PortalItem) => item.state !== 'done' && item.state !== 'not_needed'
+
+  /** Already sent once, so the buttons offer a change rather than a first go. */
+  const sent = (item: PortalItem) => item.state === 'checking'
 
   return (
     <main className="min-h-screen bg-slate-50 pb-16">
@@ -168,7 +179,7 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
               )}
 
               {open(item) && item.type === 'upload' && (
-                <UploadButton token={token} requirementId={item.id} />
+                <UploadButton token={token} requirementId={item.id} sent={sent(item)} />
               )}
 
               {open(item) && item.type !== 'upload' && formFor(item.templateKey) && (
@@ -177,6 +188,7 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
                   requirementId={item.id}
                   fields={formFor(item.templateKey)!}
                   initial={item.values}
+                  sent={sent(item)}
                 />
               )}
             </li>

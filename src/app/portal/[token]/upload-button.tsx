@@ -13,9 +13,12 @@ import { useRouter } from 'next/navigation'
 export function UploadButton({
   token,
   requirementId,
+  sent = false,
 }: {
   token: string
   requirementId: string
+  /** true once something has already been sent against this item */
+  sent?: boolean
 }) {
   const input = useRef<HTMLInputElement>(null)
   const router = useRouter()
@@ -69,9 +72,13 @@ export function UploadButton({
         type="button"
         disabled={sending}
         onClick={() => input.current?.click()}
-        className="w-full btn-brand px-6 py-3 text-sm sm:w-auto"
+        className={
+          sent
+            ? 'btn-quiet w-full px-6 py-2.5 text-sm sm:w-auto'
+            : 'btn-brand w-full px-6 py-3 text-sm sm:w-auto'
+        }
       >
-        {sending ? 'Sending…' : 'Upload'}
+        {sending ? 'Sending…' : sent ? 'Add or replace a file' : 'Upload'}
       </button>
 
       {message && (
