@@ -5,6 +5,7 @@ import { formFolder, listFolder, listSloFiles } from '@/lib/files/storage'
 import { FIRM_NAME } from '@/lib/db/seed'
 import { UploadButton } from './upload-button'
 import { DetailsForm } from './details-form'
+import { SentFiles } from './sent-files'
 import { PayFrequency } from './pay-frequency'
 
 /**
@@ -208,6 +209,10 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
                     </a>
                   ))}
                 </div>
+              )}
+
+              {open(item) && item.files.length > 0 && (
+                <SentFiles token={token} requirementId={item.id} files={item.files} />
               )}
 
               {open(item) && item.type === 'upload' && (

@@ -37,6 +37,8 @@ export type PortalRequirementRow = {
   upload_count: number
   /** pages across every file, which is what the signed pack is counted in */
   page_count: number
+  /** the files still standing against this item, so one can be taken back */
+  files: { id: string; name: string }[]
   template_key: string | null
   /** how this applicant said they are paid, or null if they have not said */
   employment_type: EmploymentType | null
@@ -77,6 +79,8 @@ export type PortalItem = {
   expectedCount: number | null
   /** files sent so far, or pages for the signed pack */
   uploadedCount: number
+  /** what the client has sent, so they can take one back if it is wrong */
+  files: { id: string; name: string }[]
   /** which pack item this is, so the page knows which boxes to show */
   templateKey: string | null
   /** how they said they are paid, so the selector shows their answer back */
@@ -170,6 +174,7 @@ export function buildPortalView(row: PortalCaseRow): PortalView {
           requirement.template_key === COUNTED_IN_PAGES
             ? requirement.page_count
             : requirement.upload_count,
+        files: requirement.files,
         templateKey: requirement.template_key,
         employmentType: requirement.employment_type,
         values: requirement.template_key === NEVER_SHOWN_BACK ? {} : requirement.answers,
@@ -268,7 +273,7 @@ export function supabasePortalStore(): PortalStore {
       const { data: requirements, error: reqError } = await db
         .from('requirements')
         .select(
-          'id, applicant, type, label, description, status, is_mandatory, expected_count, sort_order, template_key, employment_type, uploads(page_count, deleted_at), answers(field_key, value)',
+          'id, applicant, type, label, description, status, is_mandatory, expected_count, sort_order, template_key, employment_type, uploads(id, original_filename, page_count, deleted_at), answers(field_key, value)',
         )
         .eq('case_id', data.id)
         .order('sort_order')
@@ -279,17 +284,23 @@ export function supabasePortalStore(): PortalStore {
         ...(data as Omit<PortalCaseRow, 'requirements'>),
         requirements: (requirements ?? []).map((r) => {
           const { uploads, answers, ...rest } = r as typeof r & {
-            uploads: { page_count: number | null; deleted_at: string | null }[]
+            uploads: {
+              id: string
+              original_filename: string
+              page_count: number | null
+              deleted_at: string | null
+            }[]
             answers: { field_key: string; value: string | null }[]
           }
           const live = (uploads ?? []).filter((u) => !u.deleted_at)
           return {
             ...(rest as unknown as Omit<
               PortalRequirementRow,
-              'upload_count' | 'page_count' | 'answers'
+              'upload_count' | 'page_count' | 'answers' | 'files'
             >),
             upload_count: live.length,
             page_count: live.reduce((sum, u) => sum + (u.page_count ?? 1), 0),
+            files: live.map((u) => ({ id: u.id, name: u.original_filename })),
             answers: Object.fromEntries((answers ?? []).map((a) => [a.field_key, a.value ?? ''])),
           }
         }),

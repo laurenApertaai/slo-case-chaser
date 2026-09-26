@@ -302,3 +302,64 @@ export async function receiveEmploymentType(
 
   return { ok: true, complete: false, expected: patch.expected_count ?? null }
 }
+
+// ---------------------------------------------------------------------------
+// Taking a file back
+// ---------------------------------------------------------------------------
+
+/**
+ * A client removing something they sent by mistake.
+ *
+ * The row is marked as withdrawn rather than deleted, and the file itself is
+ * left in place until the retention sweep. Somebody who removes the right
+ * document by accident has not lost it, and the record still shows that it was
+ * sent and taken back.
+ *
+ * An item the adviser has already accepted is not touched: that is their
+ * judgement, and it does not change underneath them.
+ */
+export async function removeUpload(
+  row: PortalCaseRow,
+  requirementId: string,
+  uploadId: string,
+): Promise<ReceiveResult> {
+  const item = findItem(row, requirementId)
+  if (!item) return { ok: false, status: 404, message: 'That is not on your list.' }
+
+  if (isClosed(item)) {
+    return { ok: false, status: 409, message: 'We have already dealt with that one. Thank you.' }
+  }
+
+  // The file has to be one of this item's own.
+  const file = item.files.find((f) => f.id === uploadId)
+  if (!file) return { ok: false, status: 404, message: 'We could not find that file.' }
+
+  const db = serverClient()
+  const { error } = await db
+    .from('uploads')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', uploadId)
+  if (error) throw error
+
+  // What is left may no longer be enough, so it goes back on the list rather
+  // than sitting there looking finished.
+  const left = item.files.length - 1
+  if (item.status === 'received' && (item.expected_count === null || left < item.expected_count)) {
+    const { error: reopen } = await db
+      .from('requirements')
+      .update({ status: 'outstanding', received_at: null, received_via: null })
+      .eq('id', requirementId)
+    if (reopen) throw reopen
+  }
+
+  await db.from('events').insert({
+    case_id: row.id,
+    requirement_id: requirementId,
+    type: 'upload_withdrawn',
+    actor: 'client',
+    // The file name only. Nothing about what was in it.
+    detail: { file: file.name },
+  })
+
+  return { ok: true, complete: false, sentSoFar: left, expected: item.expected_count }
+}
