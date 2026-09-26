@@ -51,13 +51,13 @@ export function NewCaseForm() {
         <div className="mt-6 flex gap-3">
           <Link
             href="/cases/new"
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+            className="btn-brand px-5 py-2.5 text-sm"
           >
             Create another
           </Link>
           <Link
             href="/cases"
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="btn-quiet px-5 py-2.5 text-sm"
           >
             Back to cases
           </Link>
@@ -99,20 +99,20 @@ export function NewCaseForm() {
             type="file"
             multiple
             accept="application/pdf,image/*"
-            className="mt-1 block w-full text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-slate-800"
+            className="mt-1 block w-full text-sm text-slate-700 file:mr-3 file:rounded-full file:border-0 file:bg-brand file:px-5 file:py-2 file:text-sm file:font-semibold file:text-white"
           />
         </div>
 
         <div className="flex gap-3 pt-1">
           <button
             type="submit"
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+            className="btn-brand px-5 py-2.5 text-sm"
           >
             {pending ? 'Creating…' : 'Create case'}
           </button>
           <Link
             href="/cases"
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="btn-quiet px-5 py-2.5 text-sm"
           >
             Cancel
           </Link>

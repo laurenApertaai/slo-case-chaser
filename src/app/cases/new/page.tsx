@@ -10,18 +10,21 @@ export default async function NewCasePage() {
   if (!adviser) redirect('/login?error=1')
 
   return (
-    <main className="min-h-screen bg-slate-50 p-8">
-      <header className="mx-auto max-w-3xl">
-        <Link href="/cases" className="text-sm text-slate-500 hover:text-slate-700">
-          ← Cases
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">New case</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Creates the case and its checklist from the standard second charge pack.
-        </p>
+    <main className="min-h-screen bg-slate-50 pb-12">
+      <div className="h-1 bg-brand" />
+      <header className="slo-navy px-8 py-8">
+        <div className="mx-auto max-w-3xl">
+          <Link href="/cases" className="text-sm text-white/70 hover:text-white">
+            ← Cases
+          </Link>
+          <h1 className="mt-2 text-3xl font-bold text-white">New case</h1>
+          <p className="mt-1 text-sm text-white/70">
+            Creates the case and its checklist from the standard second charge pack.
+          </p>
+        </div>
       </header>
 
-      <section className="mx-auto mt-8 max-w-3xl">
+      <section className="mx-auto mt-8 max-w-3xl px-8">
         <NewCaseForm />
       </section>
     </main>

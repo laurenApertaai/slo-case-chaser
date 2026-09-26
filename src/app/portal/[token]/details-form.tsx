@@ -77,7 +77,7 @@ export function DetailsForm({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-3 w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-medium text-white hover:bg-slate-800 sm:w-auto"
+        className="btn-brand mt-3 w-full px-6 py-3 text-sm sm:w-auto"
       >
         Enter details
       </button>
@@ -101,7 +101,7 @@ export function DetailsForm({
                       key={option.value}
                       className={`cursor-pointer rounded-lg border px-4 py-2.5 text-sm ${
                         values[field.key] === option.value
-                          ? 'border-slate-900 bg-slate-900 text-white'
+                          ? 'border-brand bg-brand text-white'
                           : 'border-slate-300 bg-white text-slate-700'
                       }`}
                     >
@@ -170,7 +170,7 @@ export function DetailsForm({
         <button
           type="submit"
           disabled={sending}
-          className="rounded-lg bg-slate-900 px-4 py-3 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+          className="btn-brand px-6 py-3 text-sm"
         >
           {sending ? 'Sending…' : 'Send'}
         </button>

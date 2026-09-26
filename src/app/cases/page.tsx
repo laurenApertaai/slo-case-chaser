@@ -40,22 +40,24 @@ export default async function CasesPage({
   const othersCount = everything.length - cases.length
 
   return (
-    <main className="min-h-screen bg-slate-50 p-8">
-      <header className="mx-auto flex max-w-5xl items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Cases</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Signed in as {adviser.name}, {adviser.firm}
-          </p>
+    <main className="min-h-screen bg-slate-50">
+      <div className="h-1 bg-brand" />
+      <header className="slo-navy px-8 py-8">
+        <div className="mx-auto flex max-w-5xl items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-light">
+              {adviser.firm}
+            </p>
+            <h1 className="mt-2 text-3xl font-bold text-white">Cases</h1>
+            <p className="mt-1 text-sm text-white/70">Signed in as {adviser.name}</p>
+          </div>
+          <Link href="/cases/new" className="btn-brand px-5 py-2.5 text-sm">
+            New case
+          </Link>
         </div>
-        <Link
-          href="/cases/new"
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-        >
-          New case
-        </Link>
       </header>
 
+      <div className="px-8">
       <div className="mx-auto mt-6 flex max-w-5xl items-center gap-4 text-sm">
         <Link
           href="/cases"
@@ -74,7 +76,7 @@ export default async function CasesPage({
         </Link>
       </div>
 
-      <section className="mx-auto mt-4 max-w-5xl rounded-xl border border-slate-200 bg-white">
+      <section className="mx-auto mt-4 mb-10 max-w-5xl rounded-xl border border-slate-200 bg-white">
         {cases.length === 0 ? (
           <p className="p-8 text-slate-600">
             {showAll
@@ -118,6 +120,7 @@ export default async function CasesPage({
           </ul>
         )}
       </section>
+      </div>
     </main>
   )
 }

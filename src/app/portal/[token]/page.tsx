@@ -43,10 +43,13 @@ const STATE_TEXT: Record<PortalItem['state'], string> = {
 function Closed({ message }: { message: string }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <div className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white text-center">
-        <div className="h-1 bg-brand" />
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-lg">
+        <div className="slo-navy px-6 py-5">
+          <h1 className="text-sm font-semibold uppercase tracking-[0.18em] text-white">
+            {FIRM_NAME}
+          </h1>
+        </div>
         <div className="p-8">
-        <h1 className="text-lg font-semibold text-slate-900">{FIRM_NAME}</h1>
         <p className="mt-4 text-slate-600">{message}</p>
         </div>
       </div>
@@ -68,20 +71,20 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
 
   return (
     <main className="min-h-screen bg-slate-50 pb-16">
-      {/* The brand pink, used as a rule rather than as text: at this size it
-          does not carry enough contrast on white to be readable as type. */}
       <div className="h-1 bg-brand" />
-      <header className="border-b border-slate-200 bg-white px-5 py-6">
+      <header className="slo-navy px-5 py-8">
         <div className="mx-auto max-w-xl">
-          <p className="text-xs uppercase tracking-wide text-slate-500">{FIRM_NAME}</p>
-          <h1 className="mt-1 text-2xl font-semibold text-slate-900">Hello {view.firstName}</h1>
-          <p className="mt-2 text-slate-600">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-light">
+            {FIRM_NAME}
+          </p>
+          <h1 className="mt-2 text-3xl font-bold text-white">Hello {view.firstName}</h1>
+          <p className="mt-3 text-white/85">
             {view.allDone
               ? 'Thank you. We have everything we asked for and there is nothing else to send.'
               : 'We require the following documents/information in order to fully submit your application.'}
           </p>
           {view.isJoint && !view.allDone && (
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-3 text-sm text-white/70">
               This list covers both applicants. Either of you can add details/documents.
             </p>
           )}

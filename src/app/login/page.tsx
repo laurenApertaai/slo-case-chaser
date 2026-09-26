@@ -33,11 +33,11 @@ export default async function LoginPage({
   const failed = params.error === '1'
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <div className="w-full max-w-sm overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="h-1 bg-brand" />
+    <main className="slo-navy flex min-h-screen items-center justify-center p-6">
+      <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="h-1.5 bg-brand" />
         <div className="p-8">
-        <h1 className="text-xl font-semibold text-slate-900">Secured Lending Options</h1>
+        <h1 className="text-xl font-bold text-slate-900">Secured Lending Options</h1>
         <p className="mt-1 text-sm text-slate-500">Case document chaser</p>
 
         {failed && (
@@ -82,7 +82,7 @@ export default async function LoginPage({
 
           <button
             type="submit"
-            className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+            className="w-full btn-brand px-5 py-2.5 text-sm"
           >
             Sign in
           </button>
