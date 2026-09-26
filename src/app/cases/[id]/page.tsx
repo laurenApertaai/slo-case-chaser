@@ -12,7 +12,8 @@ import { Received } from './received'
 import { formFor } from '@/lib/portal/answers'
 import { canSettle } from '@/lib/cases/settle'
 import { AttachForm } from './attach-form'
-import { formFolder, listFolder } from '@/lib/files/storage'
+import { formFolder, listFolder, listSloFiles } from '@/lib/files/storage'
+import { SloPanel } from './edit/slo-panel'
 
 export const metadata = { title: 'Case' }
 
@@ -73,6 +74,7 @@ export default async function CasePage({
   if (!record) notFound()
 
   const link = await portalUrl(record.portal_token)
+  const sloFiles = await listSloFiles(record.id)
 
   // The forms the adviser has attached, one folder per item.
   const attachedForms: Record<string, { name: string; size: number }[]> = {}
@@ -236,6 +238,10 @@ export default async function CasePage({
                     fields={formFor(item.template_key)}
                     bankLast4={record.bank_details_last4}
                   />
+                  {item.template_key === 'slo_documents' && (
+                    <SloPanel caseId={record.id} files={sloFiles} compact />
+                  )}
+
                   {/* Only an item the client sends a document back for can
                       carry a form to sign. */}
                   {item.type === 'upload' && item.template_key !== 'slo_documents' && (

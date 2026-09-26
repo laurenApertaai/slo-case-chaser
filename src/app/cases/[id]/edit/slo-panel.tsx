@@ -4,7 +4,16 @@ import { useActionState, useTransition } from 'react'
 import { attachSloAction, removeSloAction, type SloState } from './slo-actions'
 
 /** The SLO documents the client downloads: see them, add more, swap or remove one. */
-export function SloPanel({ caseId, files }: { caseId: string; files: { name: string; size: number }[] }) {
+export function SloPanel({
+  caseId,
+  files,
+  compact = false,
+}: {
+  caseId: string
+  files: { name: string; size: number }[]
+  /** true when it sits inside the item on the case page rather than alone */
+  compact?: boolean
+}) {
   const [state, formAction, pending] = useActionState<SloState, FormData>(
     attachSloAction.bind(null, caseId),
     { status: 'idle' },
@@ -12,8 +21,16 @@ export function SloPanel({ caseId, files }: { caseId: string; files: { name: str
   const [removing, startRemoving] = useTransition()
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-8">
-      <h2 className="text-lg font-semibold text-slate-900">SLO documents</h2>
+    <section
+      className={
+        compact
+          ? 'mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3'
+          : 'rounded-xl border border-slate-200 bg-white p-8'
+      }
+    >
+      <h2 className={compact ? 'text-xs font-medium text-slate-700' : 'text-lg font-semibold text-slate-900'}>
+        SLO documents for the client to sign
+      </h2>
 
       {files.length === 0 ? (
         <p className="mt-2 text-sm text-amber-800">
