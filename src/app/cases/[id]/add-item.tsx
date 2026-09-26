@@ -90,22 +90,6 @@ export function AddItem({ caseId, isJoint }: { caseId: string; isJoint: boolean 
           )}
         </div>
 
-        <div>
-          <label htmlFor="description" className={LABEL}>
-            Anything else the client should know
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            rows={2}
-            className={FIELD}
-            placeholder="A utility bill or council tax bill from the last three months."
-          />
-          <p className="mt-1 text-xs text-slate-500">
-            Optional. The client reads both of these, so spell contractions out in full.
-          </p>
-        </div>
-
         <div className="flex flex-wrap items-end gap-4">
           <div>
             <label htmlFor="applicant" className={LABEL}>
