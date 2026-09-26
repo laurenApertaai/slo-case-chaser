@@ -34,7 +34,9 @@ export default async function LoginPage({
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="w-full max-w-sm overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="h-1 bg-brand" />
+        <div className="p-8">
         <h1 className="text-xl font-semibold text-slate-900">Secured Lending Options</h1>
         <p className="mt-1 text-sm text-slate-500">Case document chaser</p>
 
@@ -85,6 +87,7 @@ export default async function LoginPage({
             Sign in
           </button>
         </form>
+        </div>
       </div>
     </main>
   )

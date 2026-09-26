@@ -43,9 +43,12 @@ const STATE_TEXT: Record<PortalItem['state'], string> = {
 function Closed({ message }: { message: string }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 text-center">
+      <div className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white text-center">
+        <div className="h-1 bg-brand" />
+        <div className="p-8">
         <h1 className="text-lg font-semibold text-slate-900">{FIRM_NAME}</h1>
         <p className="mt-4 text-slate-600">{message}</p>
+        </div>
       </div>
     </main>
   )
@@ -65,6 +68,9 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
 
   return (
     <main className="min-h-screen bg-slate-50 pb-16">
+      {/* The brand pink, used as a rule rather than as text: at this size it
+          does not carry enough contrast on white to be readable as type. */}
+      <div className="h-1 bg-brand" />
       <header className="border-b border-slate-200 bg-white px-5 py-6">
         <div className="mx-auto max-w-xl">
           <p className="text-xs uppercase tracking-wide text-slate-500">{FIRM_NAME}</p>

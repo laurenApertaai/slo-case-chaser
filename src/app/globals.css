@@ -1,26 +1,62 @@
 @import "tailwindcss";
 
+/*
+ * Secured Lending Options brand colours.
+ *
+ * Taken from sloptions.co.uk, where they are defined as --navy, --gold (which
+ * is in fact the pink), --off-white, --tint, --text, --text-muted and --border.
+ *
+ * The app was built on Tailwind's slate greys, and their palette sits almost
+ * exactly on top of it: their border is slate-300 and their muted text is
+ * slate-600, both unchanged. So rather than rewrite hundreds of class names,
+ * the slate ramp itself is redefined here in navy-tinted brand values. Every
+ * page picks the brand up without being touched, and there is one place to
+ * change it if the brand ever moves.
+ *
+ * Red, amber and green are deliberately left alone. They carry the case status
+ * and have to stay readable as warning colours, not as brand ones.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --slo-navy: #0a1030;
+  --slo-navy-mid: #131e5c;
+  --slo-navy-light: #233e9e;
+  --slo-pink: #ec2d96;
+  --slo-pink-light: #f861b8;
+  --slo-off-white: #f8f9fc;
+  --slo-tint: #eaf0ff;
+}
+
+@theme {
+  /* The greys, re-cut in brand navy. */
+  --color-slate-50: #f8f9fc; /* their off-white: every page background */
+  --color-slate-100: #eaf0ff; /* their tint */
+  --color-slate-200: #dce3f5;
+  --color-slate-300: #cbd5e1; /* their border, unchanged */
+  --color-slate-400: #8a93ad;
+  --color-slate-500: #5b6480;
+  --color-slate-600: #475569; /* their muted text, unchanged */
+  --color-slate-700: #2a3557;
+  --color-slate-800: #131e5c; /* their mid navy */
+  --color-slate-900: #0a1030; /* their navy: buttons and headings */
+  --color-slate-950: #060a1f;
+
+  /*
+   * The pink, for accents only. It is not a body text colour: on white it does
+   * not reach the contrast small text needs, so it is used as a background with
+   * navy on top, or as a rule — which is how their own site uses it.
+   */
+  --color-brand: #ec2d96;
+  --color-brand-light: #f861b8;
+  --color-brand-tint: #fce4ef;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #ffffff;
+  color: var(--slo-navy);
 }
