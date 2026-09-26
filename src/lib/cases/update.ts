@@ -77,6 +77,8 @@ export type ExistingRequirement = {
   description: string | null
   expected_count: number | null
   sort_order: number
+  /** how the client said they are paid, where they have said */
+  employment_type?: EmploymentType | null
 }
 
 export type RequirementPatch = Partial<{
@@ -272,7 +274,16 @@ export function planResync(
       patch.description = wanted.description
     }
 
-    if (isUnsettled(current.status) && current.expected_count !== wanted.expected_count) {
+    // The client's own answer wins over the template's guess. Without this,
+    // saving an edit would wipe the file count that came from them saying how
+    // they are paid, and the item would stop counting "8 of 12 uploaded".
+    const clientAnswered = current.employment_type != null
+
+    if (
+      !clientAnswered &&
+      isUnsettled(current.status) &&
+      current.expected_count !== wanted.expected_count
+    ) {
       patch.expected_count = wanted.expected_count
     }
 
@@ -325,7 +336,7 @@ export async function updateCase(caseId: string, input: CreateCaseInput, actor: 
     supabaseStore(db).loadTemplate(STANDARD_PACK),
     db
       .from('requirements')
-      .select('id, template_key, applicant, status, label, description, expected_count, sort_order')
+      .select('id, template_key, applicant, status, label, description, expected_count, sort_order, employment_type')
       .eq('case_id', caseId),
   ])
   if (reqError) throw reqError
