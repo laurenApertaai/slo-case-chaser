@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { buildPortalView, openPortal, type PortalItem } from '@/lib/portal/resolve'
-import { formFor } from '@/lib/portal/answers'
+import { formFor, noteFor } from '@/lib/portal/answers'
 import { listSloFiles } from '@/lib/files/storage'
 import { FIRM_NAME } from '@/lib/db/seed'
 import { UploadButton } from './upload-button'
@@ -189,6 +189,7 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
                   fields={formFor(item.templateKey)!}
                   initial={item.values}
                   sent={sent(item)}
+                  note={noteFor(item.templateKey)}
                 />
               )}
             </li>

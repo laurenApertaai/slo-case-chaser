@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { FormField } from '@/lib/portal/answers'
+import { isShown, type FormField } from '@/lib/portal/answers'
 
 const BOX =
   'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base text-slate-900 focus:border-slate-500 focus:outline-none'
@@ -19,6 +19,7 @@ const WRONG = 'border-red-500 bg-red-50'
  */
 export function DetailsForm({
   sent = false,
+  note = null,
   token,
   requirementId,
   fields,
@@ -26,6 +27,8 @@ export function DetailsForm({
 }: {
   /** true once an answer has already been sent, so the button offers a change */
   sent?: boolean
+  /** a line shown above the boxes, before anything is filled in */
+  note?: string | null
   token: string
   requirementId: string
   fields: FormField[]
@@ -40,21 +43,12 @@ export function DetailsForm({
 
   const set = (key: string, value: string) => setValues((v) => ({ ...v, [key]: value }))
 
-  const shown = (field: FormField): boolean => {
-    if (!field.showWhen) return true
-    const parent = fields.find((f) => f.key === field.showWhen!.key)
-    if (parent && !shown(parent)) return false
+  // Today, in the client's own timezone, for the "does this reach back three
+  // years" rule. The server checks against its own clock when it is sent.
+  const today = new Date().toISOString().slice(0, 10)
 
-    const answer = values[field.showWhen.key] ?? ''
-
-    // "at least this many" is how one age box appears per dependent.
-    if (field.showWhen.atLeast !== undefined) {
-      const n = Number(answer)
-      return Number.isFinite(n) && answer !== '' && n >= field.showWhen.atLeast
-    }
-
-    return answer === field.showWhen.value
-  }
+  // The very same rule the server checks by, rather than a second copy of it.
+  const shown = (field: FormField): boolean => isShown(field, values, today)
 
   async function submit(event: React.FormEvent) {
     event.preventDefault()
@@ -102,6 +96,11 @@ export function DetailsForm({
 
   return (
     <form onSubmit={submit} className="mt-4 space-y-4" noValidate>
+      {note && (
+        <p className="rounded-lg bg-brand-tint px-3 py-2.5 text-sm font-medium text-slate-900">
+          {note}
+        </p>
+      )}
       {fields.filter(shown).map((field) => {
         const id = `${requirementId}-${field.key}`
         const error = errors[field.key]

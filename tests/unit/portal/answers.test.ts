@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { formFor, validateAnswers } from '@/lib/portal/answers'
+import { formFor, noteFor, validateAnswers } from '@/lib/portal/answers'
 import { HOUSEHOLD_BILL_FIELDS } from '@/lib/db/seed'
 
 const TODAY = new Date('2026-09-19T12:00:00Z')
 const CONTRACTION = /\b\w+['’](s|t|re|ll|ve|d|m)\b/i
 
-function validate(key: string, raw: Record<string, string>) {
-  return validateAnswers(key, raw, TODAY)
+function validate(key: string, raw: Record<string, string>, now: Date = TODAY) {
+  return validateAnswers(key, raw, now)
 }
 
 function allBills(value = '0') {
@@ -205,6 +205,99 @@ describe('dependents', () => {
   it('insists on a yes or a no', () => {
     const result = validate('dependants', {})
     expect(result.ok).toBe(false)
+  })
+})
+
+describe('three year work history', () => {
+  const NOW = new Date('2026-09-26T12:00:00Z')
+  const employed = (extra: Record<string, string>) =>
+    validate(
+      'employment_details',
+      { employment_status: 'employed', job_title: 'Nurse', employer_name: 'NHS', ...extra },
+      NOW,
+    )
+
+  it('asks nothing more when the current job goes back three years', () => {
+    const result = employed({ joined_date: '2020-01-01' })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.values.previous_1_employer).toBe('')
+  })
+
+  it('asks for the previous job when the current one is too recent', () => {
+    const result = employed({ joined_date: '2025-06-01' })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.previous_1_employer).toBeTruthy()
+    expect(result.errors.previous_1_job_title).toBeTruthy()
+    expect(result.errors.previous_1_from).toBeTruthy()
+    expect(result.errors.previous_1_to).toBeTruthy()
+  })
+
+  it('stops asking once the previous job reaches back far enough', () => {
+    const result = employed({
+      joined_date: '2025-06-01',
+      previous_1_employer: 'Boots',
+      previous_1_job_title: 'Dispenser',
+      previous_1_from: '2019-03-01',
+      previous_1_to: '2025-05-30',
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.values.previous_2_employer).toBe('')
+  })
+
+  it('keeps asking while the history is still short', () => {
+    const result = employed({
+      joined_date: '2025-06-01',
+      previous_1_employer: 'Boots',
+      previous_1_job_title: 'Dispenser',
+      previous_1_from: '2024-01-01',
+      previous_1_to: '2025-05-30',
+    })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.previous_2_employer).toBeTruthy()
+  })
+
+  it('asks the self employed the same way when they have not been trading three years', () => {
+    const result = validate(
+      'employment_details',
+      { employment_status: 'self_employed', trading_style: 'sole_trader', years_self_employed: '1' },
+      NOW,
+    )
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.previous_1_employer).toBeTruthy()
+  })
+
+  it('leaves the self employed alone once they are past three years', () => {
+    const result = validate(
+      'employment_details',
+      { employment_status: 'self_employed', trading_style: 'sole_trader', years_self_employed: '5' },
+      NOW,
+    )
+
+    expect(result.ok).toBe(true)
+  })
+
+  it('does not ask an employed client for years of self employment', () => {
+    const result = employed({ joined_date: '2020-01-01' })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.values.years_self_employed).toBe('')
+  })
+
+  it('tells the client up front that three years are needed', () => {
+    expect(noteFor('employment_details')).toBe(
+      'Please note, we need a 3 year employment history',
+    )
   })
 })
 

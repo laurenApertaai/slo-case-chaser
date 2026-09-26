@@ -31,14 +31,30 @@ export type FormField = {
   kind: FieldKind
   options?: { value: string; label: string }[]
   /**
-   * Only shown, and only checked, when another answer says so: either it
-   * matches `value`, or it is a number at least as big as `atLeast`.
+   * Only shown, and only checked, when another answer says so.
    *
-   * `atLeast` is what lets one dependent age box appear per dependent. Picking
-   * 3 shows boxes 1, 2 and 3, and picking 1 again empties the other two rather
-   * than leaving stale ages behind.
+   * `atLeast` is what lets one dependent age box appear per dependent.
+   * `withinYears` and `lessThan` are what drive the three year work history:
+   * a start date more recent than three years ago, or fewer than three years
+   * trading, means we still have a gap to fill.
+   *
+   * `anyOf` holds a field that has two ways of becoming relevant, which the
+   * first previous job does: employed but recently started, or self employed
+   * but not for long.
    */
-  showWhen?: { key: string; value?: string; atLeast?: number }
+  showWhen?: Condition | { anyOf: Condition[] }
+}
+
+export type Condition = {
+  key: string
+  /** the answer is exactly this */
+  value?: string
+  /** the answer is a number at least this big */
+  atLeast?: number
+  /** the answer is a number smaller than this */
+  lessThan?: number
+  /** the answer is a date more recent than this many years ago */
+  withinYears?: number
 }
 
 export type AnswerResult =
@@ -55,6 +71,42 @@ export const MAX_DEPENDANTS = 10
 
 const EMPLOYED = { key: 'employment_status', value: 'employed' }
 const SELF_EMPLOYED = { key: 'employment_status', value: 'self_employed' }
+
+/** How far back a lender wants to see. */
+const HISTORY_YEARS = 3
+
+/** How many previous jobs anybody is asked to list one at a time. */
+const MAX_PREVIOUS_JOBS = 3
+
+/**
+ * The previous job boxes, one set at a time.
+ *
+ * The first set appears when the current job does not reach back three years -
+ * whether they are employed and recently started, or self employed and not for
+ * long. Each set after that appears only while the one before it still leaves
+ * a gap, so somebody with one long previous job is never asked for a second.
+ */
+function previousJobs(): FormField[] {
+  return Array.from({ length: MAX_PREVIOUS_JOBS }, (_, i) => {
+    const n = i + 1
+    const showWhen: FormField['showWhen'] =
+      n === 1
+        ? {
+            anyOf: [
+              { key: 'joined_date', withinYears: HISTORY_YEARS },
+              { key: 'years_self_employed', lessThan: HISTORY_YEARS },
+            ],
+          }
+        : { key: `previous_${n - 1}_from`, withinYears: HISTORY_YEARS }
+
+    return [
+      { key: `previous_${n}_employer`, label: `Previous employer ${n}`, kind: 'text' as const, showWhen },
+      { key: `previous_${n}_job_title`, label: `Job title at previous employer ${n}`, kind: 'text' as const, showWhen },
+      { key: `previous_${n}_from`, label: `Date you started at previous employer ${n}`, kind: 'date' as const, showWhen },
+      { key: `previous_${n}_to`, label: `Date you left previous employer ${n}`, kind: 'date' as const, showWhen },
+    ]
+  }).flat()
+}
 
 const FORMS: Record<string, FormField[]> = {
   dependants: [
@@ -121,6 +173,11 @@ const FORMS: Record<string, FormField[]> = {
       showWhen: { key: 'trading_style', value: 'limited' },
     },
     { key: 'years_self_employed', label: 'Years in self employment', kind: 'number', showWhen: SELF_EMPLOYED },
+
+    // The three year work history. A job that started less than three years
+    // ago, or fewer than three years self employed, leaves a gap, and the gap
+    // is filled one previous job at a time until it reaches back far enough.
+    ...previousJobs(),
   ],
 
   home_improvements: [
@@ -138,6 +195,20 @@ const FORMS: Record<string, FormField[]> = {
 }
 
 /** The boxes for a question item, or null for an item that is uploaded instead. */
+/**
+ * A line shown at the top of an item's boxes, before anything is filled in.
+ *
+ * Client-facing, in Lori's own words.
+ */
+const NOTES: Record<string, string> = {
+  employment_details: 'Please note, we need a 3 year employment history',
+}
+
+export function noteFor(templateKey: string | null): string | null {
+  if (!templateKey) return null
+  return NOTES[templateKey] ?? null
+}
+
 export function formFor(templateKey: string | null): FormField[] | null {
   if (!templateKey) return null
   return FORMS[templateKey] ?? null
@@ -148,20 +219,59 @@ function isEmail(value: string): boolean {
 }
 
 /** Whether a field applies, given the other answers. */
-function applies(field: FormField, raw: Record<string, string>): boolean {
-  if (!field.showWhen) return true
-  const parent = FORMS_BY_KEY.get(field.showWhen.key)
+/** The date this many years before today, as YYYY-MM-DD. */
+function yearsBefore(today: string, years: number): string {
+  const [y, m, d] = today.split('-').map(Number)
+  const then = new Date(Date.UTC(y - years, m - 1, d))
+  return then.toISOString().slice(0, 10)
+}
+
+function holds(condition: Condition, raw: Record<string, string>, today: string): boolean {
+  const parent = FORMS_BY_KEY.get(condition.key)
   // A field whose parent is itself hidden is hidden too.
-  if (parent && !applies(parent, raw)) return false
+  if (parent && !isShown(parent, raw, today)) return false
 
-  const answer = (raw[field.showWhen.key] ?? '').trim()
+  const answer = (raw[condition.key] ?? '').trim()
+  if (answer === '') return false
 
-  if (field.showWhen.atLeast !== undefined) {
+  if (condition.atLeast !== undefined) {
     const n = Number(answer)
-    return Number.isFinite(n) && n >= field.showWhen.atLeast
+    return Number.isFinite(n) && n >= condition.atLeast
   }
 
-  return answer === field.showWhen.value
+  if (condition.lessThan !== undefined) {
+    const n = Number(answer)
+    return Number.isFinite(n) && n < condition.lessThan
+  }
+
+  if (condition.withinYears !== undefined) {
+    // A date more recent than the cut-off leaves a gap still to fill.
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(answer)) return false
+    return answer > yearsBefore(today, condition.withinYears)
+  }
+
+  return answer === condition.value
+}
+
+/**
+ * Whether a field is being asked for, given what has been answered so far.
+ *
+ * Exported because the page draws by exactly this rule and the server checks by
+ * it. Two copies of it would drift, and the day they did, a client would be
+ * shown a box that was never checked or asked for one they could not see.
+ */
+export function isShown(
+  field: FormField,
+  raw: Record<string, string>,
+  today: string,
+): boolean {
+  if (!field.showWhen) return true
+
+  if ('anyOf' in field.showWhen) {
+    return field.showWhen.anyOf.some((c) => holds(c, raw, today))
+  }
+
+  return holds(field.showWhen, raw, today)
 }
 
 const FORMS_BY_KEY = new Map(Object.values(FORMS).flat().map((f) => [f.key, f]))
@@ -232,7 +342,7 @@ export function validateAnswers(
   for (const field of form) {
     // Anything that does not apply is stored empty, so a stale answer from a
     // different choice is never kept.
-    if (!applies(field, input)) {
+    if (!isShown(field, input, today)) {
       values[field.key] = ''
       continue
     }

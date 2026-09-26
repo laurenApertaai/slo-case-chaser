@@ -177,6 +177,14 @@ export const DEFAULT_TEMPLATE: TemplateItem[] = [
       { key: 'trading_style', label: 'Sole trader or limited company' },
       { key: 'company_name', label: 'Company name, if limited' },
       { key: 'years_self_employed', label: 'Years in self employment' },
+      // Three years of history. Only as many previous jobs as it takes to
+      // reach back that far are ever asked for.
+      ...Array.from({ length: 3 }, (_, i) => i + 1).flatMap((n) => [
+        { key: `previous_${n}_employer`, label: `Previous employer ${n}` },
+        { key: `previous_${n}_job_title`, label: `Job title at previous employer ${n}` },
+        { key: `previous_${n}_from`, label: `Date you started at previous employer ${n}` },
+        { key: `previous_${n}_to`, label: `Date you left previous employer ${n}` },
+      ]),
     ],
   },
   {
