@@ -358,6 +358,7 @@ describe('employment details', () => {
     const result = validate('employment_details', {
       employment_status: 'self_employed',
       trading_style: 'sole_trader',
+      nature_of_business: 'Joinery',
       years_self_employed: '6',
     })
     expect(result.ok).toBe(true)
@@ -367,6 +368,7 @@ describe('employment details', () => {
     const result = validate('employment_details', {
       employment_status: 'self_employed',
       trading_style: 'limited',
+      nature_of_business: 'Joinery',
       years_self_employed: '6',
     })
     expect(result.ok).toBe(false)
