@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useTransition } from 'react'
+import { useActionState, useRef, useTransition } from 'react'
 import { attachSloAction, removeSloAction, type SloState } from './slo-actions'
 
 /** The SLO documents the client downloads: see them, add more, swap or remove one. */
@@ -19,6 +19,7 @@ export function SloPanel({
     { status: 'idle' },
   )
   const [removing, startRemoving] = useTransition()
+  const input = useRef<HTMLInputElement>(null)
 
   return (
     <section
@@ -59,19 +60,24 @@ export function SloPanel({
         </ul>
       )}
 
-      <form action={formAction} className="mt-4 flex flex-wrap items-center gap-3">
+      <form action={formAction} className="mt-4">
+        {/* The picker opens from the button. A bare file input shows "No file
+            chosen" next to it, which reads like something has gone wrong. */}
         <input
+          ref={input}
           name="slo_files"
           type="file"
           multiple
           accept="application/pdf,image/*"
           aria-label="Upload SLO documents"
-          className="text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-slate-800 hover:file:bg-slate-200"
+          className="hidden"
+          onChange={(event) => event.currentTarget.form?.requestSubmit()}
         />
         <button
-          type="submit"
+          type="button"
           disabled={pending}
-          className="btn-brand px-5 py-2.5 text-sm"
+          onClick={() => input.current?.click()}
+          className="btn-brand px-5 py-2.5 text-sm disabled:opacity-60"
         >
           {pending ? 'Uploading…' : 'Upload SLO documents'}
         </button>
