@@ -52,8 +52,20 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Source Sans 3 is the default everywhere; Lexend is asked for by name. */
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-heading);
+}
+
+/*
+ * Headings take Lexend without every heading needing a class, the same way
+ * their site does it. Anything that needs the body face back can say font-sans.
+ */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading), sans-serif;
 }
 
 body {
